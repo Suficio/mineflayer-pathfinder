@@ -1,4 +1,3 @@
-const Vec3 = require('vec3');
 const Heap = require('fastpriorityqueue');
 
 function State(p)
@@ -9,9 +8,16 @@ function State(p)
     this.cF = null;
 }
 
-function IntermediateState(ENUMStatus,Path)
+function IntermediateState(ENUMStatus, State)
 {
     this.ENUMStatus = ENUMStatus;
+
+    const Path = [State.p];
+    while (State.cF)
+    {
+        State = State.cF;
+        Path.push(State.p);
+    }
     this.Path = Path;
 }
 
@@ -23,16 +29,11 @@ function ReturnState(MainPromise)
         {
             this.ENUMStatus = IntermediateState.ENUMStatus;
             this.Path = IntermediateState.Path;
-
-            this.NextPosition = function()
-            {
-                return this.Path;
-            }
         }.bind(this))
-        .catch(function(){return});
+        .catch(function() {return;});
 }
 
-module.exports = function(bot,sp,ep)
+module.exports = function(bot, sp, ep)
 {
     // A* as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968
     // Roughly as described in https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
@@ -44,60 +45,53 @@ module.exports = function(bot,sp,ep)
     // current implementation, this could have been due to an expenisve computation of the hash, however easier to compute hashes collided too frequently.
     // Additionally nested arrays allow the AI to traverse the entirety of the world instead of being limited by integer limits.
 
-    const MainPromise = new Promise(function(resolve,reject)
+    const MainPromise = new Promise(function(resolve, reject)
     {
-        function CP(s)
-        {
-            const Path = [s.p];
-            while(s.cF) {
-                s = s.cF;
-                Path.push(s.p);
-            }
-
-            return Path;
-        }
-
         // Closed list functions
         const C = [];
-        C.push = function(s) {
+        C.push = function(s)
+        {
+            const x = s.p.x >>> 0;
+            const y = s.p.y >>> 0;
 
-            var x = s.p.x >>> 0;
-            var y = s.p.y >>> 0;
-
-            if(!this[x]) {
+            if (!this[x])
                 this[x] = [];
-            } if(!this[x][y]) {
+            if (!this[x][y])
                 this[x][y] = [];
-            }
 
             this[x][y][s.p.z >>> 0] = s;
-        }
-        C.check = function(p) {
+        };
+        C.check = function(p)
+        {
+            const x = p.x >>> 0;
+            if (this[x])
+            {
+                const y = p.y >>> 0;
+                if (this[x][y])
+                {
+                    if (this[x][y][p.z >>> 0])
 
-            var x = p.x >>> 0;
-            if(this[x]) {
-                var y = p.y >>> 0;
-                if(this[x][y]) {
-                    if(this[x][y][p.z >>> 0]) {
                         return true;
-                    }
                 }
             } return false;
-        }
+        };
 
         // Open list functions
-        const O = new Heap(function(s1,s2) {
+        const O = new Heap(function(s1, s2)
+        {
             return s1.f < s2.f;
-        })
-        O.check = function(s) {
-            for(var i = 0; i < this.size; i++) {
-                if(this.array[i].p.equals(s.p)) return i;
-            } return undefined;
-        }
-        O.replace = function(i,s) {
+        });
+        O.check = function(s)
+        {
+            for (let i = 0; i < this.size; i++)
+                if (this.array[i].p.equals(s.p)) return i;
+            return undefined;
+        };
+        O.replace = function(i, s)
+        {
             this.array[i] = s;
-            this._percolateUp(i);              
-        }
+            this._percolateUp(i);
+        };
 
         // Maintain familiarity with original heap implementation
         O.push = O.add;
@@ -105,45 +99,47 @@ module.exports = function(bot,sp,ep)
 
         // Maintains the element with the best path
         let closest = new State(sp.floored());
-            closest.g = 0; // Otherwise POSITIVE_INFINITY - POSITIVE_INFINITY returns NaN
+        closest.g = 0; // Otherwise POSITIVE_INFINITY - POSITIVE_INFINITY returns NaN
 
         const end = new State(ep.floored());
         const start = new State(sp.floored());
-            start.g = 0;
-            start.f = bot.navigate.HEURISTIC(start,end);
+        start.g = 0;
+        start.f = bot.navigate.HEURISTIC(start, end);
 
         O.push(start);
 
-        for(var i = 0; i < bot.navigate.MAX_EXPANSIONS && O.size !== 0; i++)
+        for (let i = 0; i < bot.navigate.MAX_EXPANSIONS && O.size !== 0; i++)
         {
             const current = O.pop();
-            if(current.p.equals(end.p)) return resolve(new IntermediateState(bot.navigate.ENUMStatus.Complete,CP(current)));
+            if (current.p.equals(end.p))
+                return resolve(new IntermediateState(bot.navigate.ENUMStatus.Complete, current));
+
             C.push(current);
 
             const successors = bot.navigate.getSuccessors(current.p);
-            for(var n = 0, len = successors.length; n < len; n++)
+            for (let n = 0, len = successors.length; n < len; n++)
             {
-                if(C.check(successors[n])) continue;
+                if (C.check(successors[n])) continue;
                 const s = new State(successors[n]);
 
-                const tg = current.g + bot.navigate.COST(current,s);
-                if(tg >= s.g) continue;
+                const tg = current.g + bot.navigate.COST(current, s);
+                if (tg >= s.g) continue;
 
                 s.cF = current;
                 s.g = tg;
-                s.f = s.g + bot.navigate.HEURISTIC(s,end);
+                s.f = s.g + bot.navigate.HEURISTIC(s, end);
 
                 const m = O.check(s);
-                if(!m) O.push(s); else O.replace(m,s);
+                if (!m) O.push(s); else O.replace(m, s);
             };
 
             // Retains the closest element to the end
-            if(current.f - current.g < closest.f - closest.g) closest = current;
+            if (current.f - current.g < closest.f - closest.g) closest = current;
         };
 
-        console.log("WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest path");
-        return resolve(new IntermediateState(bot.navigate.ENUMStatus.Incomplete,CP(closest)));
+        console.log('WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
+        return resolve(new IntermediateState(bot.navigate.ENUMStatus.Incomplete, CP(closest)));
     });
 
     return new ReturnState(MainPromise);
-}
+};
