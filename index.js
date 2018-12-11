@@ -36,9 +36,8 @@ module.exports = function(bot)
             return require('./Pathfinders/DLITE.js')(bot, Start, End);
     };
 
-    bot.navigate.PATH = [];
-    bot.navigate.SCAFFOLD = false;
-    bot.navigate.MAX_EXPANSIONS = 100000; // 100000
+    // bot.navigate.SCAFFOLD = false;
+    bot.navigate.MAX_EXPANSIONS = 10000; // 10000
     bot.navigate.HEURISTIC = function(s1, s2) {return s1.p.distanceTo(s2.p);};
     bot.navigate.COST = function(s1, s2) {return s1.p.distanceTo(s2.p);};
 
@@ -89,10 +88,10 @@ module.exports = function(bot)
                     const blockWorldData = bot.navigate.getBlock(blockWorldCoordinate);
                     if (
                         blockWorldData &&
-                        ((condition.condition === 'solid' &&
-                        blockWorldData.boundingBox !== 'block') ||
-                        (condition.condition === 'empty' &&
-                        blockWorldData.boundingBox !== 'empty'))
+                        (
+                            (condition.condition === 'empty' && blockWorldData.boundingBox !== 'empty') ||
+                            (condition.condition === 'solid' && blockWorldData.boundingBox !== 'block')
+                        )
                     )
                     {
                         if (type === 'condition') break; // If the block did not meet the conditions, the check is failed
