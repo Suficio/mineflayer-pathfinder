@@ -8,22 +8,24 @@ function State(p)
     this.cF = null;
 }
 
-function ReturnState(MainPromise)
+function ASTARReturnState(MainPromise)
 {
-    this.MainPromise = MainPromise;
-    this.MainPromise
-        .then(function(ENUMStatus, State)
-        {
-            this.ENUMStatus = IntermediateState.ENUMStatus;
+    const ReturnState = this;
+    this.on = function(Callback) {MainPromise.then(function() {Callback(ReturnState);});};
 
-            const Path = [State.p];
-            while (State.cF)
-            {
-                State = State.cF;
-                Path.push(State.p);
-            }
-            this.Path = Path;
-        }.bind(this))
+    MainPromise.then(function(IntermediateObject)
+    {
+        ReturnState.ENUMStatus = IntermediateObject.ENUMStatus;
+
+        let State = IntermediateObject.State;
+        const Path = [State.p];
+        while (State.cF)
+        {
+            State = State.cF;
+            Path.push(State.p);
+        }
+        ReturnState.Path = Path;
+    })
         .catch(function() {return;});
 }
 
@@ -81,8 +83,8 @@ module.exports = function(bot, sp, ep)
     };
     O.replace = function(i, s)
     {
+        // Priority queue handles the perlocation automatically eitherway
         this.array[i] = s;
-        this._percolateUp(i);
     };
 
     // Maintain familiarity with original heap implementation
@@ -106,7 +108,7 @@ module.exports = function(bot, sp, ep)
         {
             const current = O.pop();
             if (current.p.equals(end.p))
-                return resolve(bot.navigate.ENUMStatus.Complete, current);
+                return resolve({ENUMStatus: bot.navigate.ENUMStatus.Complete, State: current});
 
             C.push(current);
 
@@ -132,8 +134,8 @@ module.exports = function(bot, sp, ep)
         };
 
         console.log('WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
-        return resolve(bot.navigate.ENUMStatus.Incomplete, CP(closest));
+        return resolve({ENUMStatus: bot.navigate.ENUMStatus.Incomplete, State: closest});
     });
 
-    return new ReturnState(MainPromise);
+    return new ASTARReturnState(MainPromise);
 };

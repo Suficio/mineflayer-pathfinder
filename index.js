@@ -1,5 +1,6 @@
 EventEmitter = require('events').EventEmitter;
 const Vec3 = require('vec3');
+const Path = require('path');
 
 const optVer = require('minecraft-protocol/src/version').defaultVersion;
 const blockData = require('minecraft-data')(optVer).blocks;
@@ -11,11 +12,11 @@ module.exports = function(bot)
     // to bottom search considering the fact that once a block at the top is found, none of the blocks at the bottom will be accessible.
 
     bot.navigate = new EventEmitter();
-    bot.navigate.ENUMPathfinder = {ASTAR: 0, DLITE: 1};
+    bot.navigate.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE:2};
     bot.navigate.ENUMStatus = {Complete: 0, Incomplete: 1};
 
-    bot.navigate.getSuccessors = gMS.bind(undefined, require('.DefaultConditions/successorConditions.json'));
-    bot.navigate.getPredecessors = gMS.bind(undefined, require('.DefaultConditions/successorConditions.json'));
+    bot.navigate.getSuccessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')));
+    bot.navigate.getPredecessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')));
 
     // Native getBlock implementation too slow for this case
     bot.navigate.getBlock = function(absolutePoint)
@@ -30,14 +31,17 @@ module.exports = function(bot)
     bot.navigate.to = function(Start, End, ENUMPathfinder)
     {
         if (!ENUMPathfinder || ENUMPathfinder === bot.navigate.ENUMPathfinder.ASTAR)
-            return require('./Pathfinders/ASTAR.js')(bot, Start, End);
+            return require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.navigate.ENUMPathfinder.DLITE)
-            return require('./Pathfinders/DLITE.js')(bot, Start, End);
+            return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
+
+        else if (ENUMPathfinder === bot.navigate.ENUMPathfinder.UDLITE)
+            return require(Path.resolve(__dirname, 'Pathfinders/UDLITE.js'))(bot, Start.floored(), End.floored());
     };
 
     // bot.navigate.SCAFFOLD = false;
-    bot.navigate.MAX_EXPANSIONS = 10000; // 10000
+    bot.navigate.MAX_EXPANSIONS = 100000; // 100000
     bot.navigate.HEURISTIC = function(s1, s2) {return s1.p.distanceTo(s2.p);};
     bot.navigate.COST = function(s1, s2) {return s1.p.distanceTo(s2.p);};
 

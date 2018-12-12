@@ -68,12 +68,7 @@ module.exports = function(bot, sp, ep)
             s.k = k;
             this.add(s);
         };
-        U.update = function(i, k)
-        {
-            // Priority queue handles the perlocation automatically eitherway
-            this.array[i].k = k;
-        };
-
+        
         // Maintain familiarity with original heap implementation
         U.remove = U._removeAt;
         U.pop = U.poll;
@@ -109,12 +104,22 @@ module.exports = function(bot, sp, ep)
 
     function UpdateVertex(u)
     {
-        const exists = this.U.check(u); // Integer index
-        const equals = floatEqual(u.g,u.rhs);
+        if(u !== this.s_goal)
+        {
+            u.rhs = Number.POSITIVE_INFINITY;
 
-        if(!equals && exists !== undefined) this.U.update(exists,CalculateKey(u));
-        else if(!equals && exists === undefined) this.U.insert(u,CalculateKey(u));
-        else if(equals && exists !== undefined) this.U.remove(exists);
+            const successors = bot.navigate.getSuccessors(u.p);
+            for (let n = 0, len = successors.length; n < len; n++)
+            {
+                const sp = new R.State(successors[n]);
+                const cost = bot.navigate.HEURISTIC(u, sp) + sp.g;
+                if (u.rhs > cost) u.rhs = cost;
+            }
+        }
+
+        const exists = this.U.check(u);
+        if(exists) this.U.remove(exists);
+        if(!floatEqual(u.g, u.rhs)) this.U.insert(u, CalculateKey(u));
     }
 
     function ComputeShortestPath()
@@ -123,30 +128,32 @@ module.exports = function(bot, sp, ep)
         const CSPPromise = new Promise(function(resolve)
         {
             for (let i = 0; i < bot.navigate.MAX_EXPANSIONS && R.U.size !== 0 &&
-                (CompareKeys(R.U.peek().k, CalculateKey(R.s_start)) || R.s_start.rhs > R.s_start.g); i++)
+                (CompareKeys(R.U.peek().k, CalculateKey(R.s_start)) || !floatEqual(R.s_start.rhs, R.s_start.g)); i++)
             {
-                const u = R.U.peek();
+                const u = R.U.pop();
                 const k_old = u.k;
                 const k_new = CalculateKey(u);
 
                 if (CompareKeys(k_old, k_new))
-                    R.U.update(u, k_new);
+                {
+                    //console.log("First");
+                    R.U.insert(u, k_new);
+                }
                 else if (u.g > u.rhs)
                 {
+                    //console.log("Second");
                     u.g = u.rhs;
-                    R.U.pop() // U.remove from first
 
                     const predecessors = bot.navigate.getPredecessors(u.p);
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if(s !== this.s_goal) s.rhs = Math.min(s.rhs,bot.navigate.HEURISTIC(s,u) + u.g);
                         R.UpdateVertex(s);
                     }
                 }
                 else
                 {
-                    const g_old = u.g;
+                    //console.log("Third");
                     u.g = Number.POSITIVE_INFINITY;
 
                     const predecessors = bot.navigate.getPredecessors(u.p);
@@ -154,25 +161,16 @@ module.exports = function(bot, sp, ep)
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if(floatEqual(s,bot.navigate.HEURISTIC(s,u) + g_old))
-                        {
-                            if(s !== R.s_goal)
-                            {
-                                s.rhs = Number.POSITIVE_INFINITY;
-
-                                const successors = bot.navigate.getSuccessors(u.p);
-                                for (let m = 0, len = successors.length; m < len; m++)
-                                {
-                                    const sp = new R.State(successors[m]);
-                                    const cost = bot.navigate.HEURISTIC(s, sp) + sp.g;
-                                    if (s.rhs > cost) s.rhs = cost;
-                                }
-                            }
-                        }
                         R.UpdateVertex(s);
                     }
                 }
+
+                /*console.log("Loop conditions");
+                console.log(R.U.peek());
+                console.log(CompareKeys(R.U.peek().k, s_startKey));
+                console.log(!floatEqual(R.s_start.rhs, R.s_start.g));*/
             }
+            //console.log(R.U);
             resolve();
         });
 
