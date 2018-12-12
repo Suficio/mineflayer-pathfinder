@@ -41,7 +41,7 @@ module.exports = function(bot)
     };
 
     // bot.navigate.SCAFFOLD = false;
-    bot.navigate.MAX_EXPANSIONS = 100000; // 100000
+    bot.navigate.MAX_EXPANSIONS = 10000; // 100000
     bot.navigate.HEURISTIC = function(s1, s2) {return s1.p.distanceTo(s2.p);};
     bot.navigate.COST = function(s1, s2) {return s1.p.distanceTo(s2.p);};
 
