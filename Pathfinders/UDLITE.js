@@ -53,10 +53,10 @@ module.exports = function(bot, sp, ep)
 
                 S.push(this);
             }
-        }
+        };
 
         // Priority queue functions
-        const U = new Heap(function(s1,s2) {return CompareKeys(s1.k,s2.k)});
+        const U = new Heap(function(s1, s2) {return CompareKeys(s1.k, s2.k);});
         U.check = function(s)
         {
             for (let i = 0; i < this.size; i++)
@@ -68,7 +68,7 @@ module.exports = function(bot, sp, ep)
             s.k = k;
             this.add(s);
         };
-        
+
         // Maintain familiarity with original heap implementation
         U.remove = U._removeAt;
         U.pop = U.poll;
@@ -90,7 +90,7 @@ module.exports = function(bot, sp, ep)
 
         U.insert(this.s_goal, [bot.navigate.HEURISTIC(this.s_start, this.s_goal), 0]);
 
-       // ComputeShortestPath has to be run initially
+        // ComputeShortestPath has to be run initially
         const ReturnState = this;
         this.on = function(Callback) {this.ComputeShortestPath().then(function() {Callback(ReturnState);});};
     };
@@ -104,7 +104,7 @@ module.exports = function(bot, sp, ep)
 
     function UpdateVertex(u)
     {
-        if(u !== this.s_goal)
+        if (u !== this.s_goal)
         {
             u.rhs = Number.POSITIVE_INFINITY;
 
@@ -118,8 +118,8 @@ module.exports = function(bot, sp, ep)
         }
 
         const exists = this.U.check(u);
-        if(exists) this.U.remove(exists);
-        if(!floatEqual(u.g, u.rhs)) this.U.insert(u, CalculateKey(u));
+        if (exists) this.U.remove(exists);
+        if (!floatEqual(u.g, u.rhs)) this.U.insert(u, CalculateKey(u));
     }
 
     function ComputeShortestPath()
@@ -135,13 +135,9 @@ module.exports = function(bot, sp, ep)
                 const k_new = CalculateKey(u);
 
                 if (CompareKeys(k_old, k_new))
-                {
-                    //console.log("First");
                     R.U.insert(u, k_new);
-                }
                 else if (u.g > u.rhs)
                 {
-                    //console.log("Second");
                     u.g = u.rhs;
 
                     const predecessors = bot.navigate.getPredecessors(u.p);
@@ -153,7 +149,7 @@ module.exports = function(bot, sp, ep)
                 }
                 else
                 {
-                    //console.log("Third");
+                    // console.log("Third");
                     u.g = Number.POSITIVE_INFINITY;
 
                     const predecessors = bot.navigate.getPredecessors(u.p);
@@ -164,13 +160,7 @@ module.exports = function(bot, sp, ep)
                         R.UpdateVertex(s);
                     }
                 }
-
-                /*console.log("Loop conditions");
-                console.log(R.U.peek());
-                console.log(CompareKeys(R.U.peek().k, s_startKey));
-                console.log(!floatEqual(R.s_start.rhs, R.s_start.g));*/
             }
-            //console.log(R.U);
             resolve();
         });
 
@@ -187,6 +177,6 @@ function CompareKeys(k1, k2)
 
 function floatEqual(f1, f2)
 {
-    if(f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
+    if (f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
     return Math.abs(f1 - f2) < Number.EPSILON;
 }

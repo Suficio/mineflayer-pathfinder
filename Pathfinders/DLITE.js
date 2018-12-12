@@ -53,10 +53,10 @@ module.exports = function(bot, sp, ep)
 
                 S.push(this);
             }
-        }
+        };
 
         // Priority queue functions
-        const U = new Heap(function(s1,s2) {return CompareKeys(s1.k,s2.k)});
+        const U = new Heap(function(s1, s2) {return CompareKeys(s1.k, s2.k);});
         U.check = function(s)
         {
             for (let i = 0; i < this.size; i++)
@@ -95,7 +95,7 @@ module.exports = function(bot, sp, ep)
 
         U.insert(this.s_goal, [bot.navigate.HEURISTIC(this.s_start, this.s_goal), 0]);
 
-       // ComputeShortestPath has to be run initially
+        // ComputeShortestPath has to be run initially
         const ReturnState = this;
         this.on = function(Callback) {this.ComputeShortestPath().then(function() {Callback(ReturnState);});};
     };
@@ -110,11 +110,11 @@ module.exports = function(bot, sp, ep)
     function UpdateVertex(u)
     {
         const exists = this.U.check(u); // Integer index
-        const equals = floatEqual(u.g,u.rhs);
+        const equals = floatEqual(u.g, u.rhs);
 
-        if(!equals && exists !== undefined) this.U.update(exists,CalculateKey(u));
-        else if(!equals && exists === undefined) this.U.insert(u,CalculateKey(u));
-        else if(equals && exists !== undefined) this.U.remove(exists);
+        if (!equals && exists !== undefined) this.U.update(exists, CalculateKey(u));
+        else if (!equals && exists === undefined) this.U.insert(u, CalculateKey(u));
+        else if (equals && exists !== undefined) this.U.remove(exists);
     }
 
     function ComputeShortestPath()
@@ -134,13 +134,13 @@ module.exports = function(bot, sp, ep)
                 else if (u.g > u.rhs)
                 {
                     u.g = u.rhs;
-                    R.U.pop() // U.remove from first
+                    R.U.pop(); // U.remove from first
 
                     const predecessors = bot.navigate.getPredecessors(u.p);
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if(s !== this.s_goal) s.rhs = Math.min(s.rhs,bot.navigate.HEURISTIC(s,u) + u.g);
+                        if (s !== R.s_goal) s.rhs = Math.min(s.rhs, bot.navigate.HEURISTIC(s, u) + u.g);
                         R.UpdateVertex(s);
                     }
                 }
@@ -154,9 +154,9 @@ module.exports = function(bot, sp, ep)
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if(floatEqual(s,bot.navigate.HEURISTIC(s,u) + g_old))
+                        if (floatEqual(s, bot.navigate.HEURISTIC(s, u) + g_old))
                         {
-                            if(s !== R.s_goal)
+                            if (s !== R.s_goal)
                             {
                                 s.rhs = Number.POSITIVE_INFINITY;
 
@@ -189,6 +189,6 @@ function CompareKeys(k1, k2)
 
 function floatEqual(f1, f2)
 {
-    if(f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
+    if (f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
     return Math.abs(f1 - f2) < Number.EPSILON;
 }

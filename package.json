@@ -1,0 +1,27 @@
+{
+  "name": "mineflayer-navigate2",
+  "version": "0.0.1",
+  "description": "Library for 3D pathfinding through mineflayer bot using A* and D*Lite algorithms.",
+  "main": "index.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CheezBarger/Mineflayer-Navigate.git"
+  },
+  "keywords": [
+    "mineflayer",
+    "minecraft",
+    "bot",
+    "path",
+    "finding",
+    "navigation",
+    "3D"
+  ],
+  "author": "Jakub Łabor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CheezBarger/Mineflayer-Navigate/issues"
+  },
+  "homepage": "https://github.com/CheezBarger/Mineflayer-Navigate#readme"
+}

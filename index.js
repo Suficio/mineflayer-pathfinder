@@ -12,7 +12,7 @@ module.exports = function(bot)
     // to bottom search considering the fact that once a block at the top is found, none of the blocks at the bottom will be accessible.
 
     bot.navigate = new EventEmitter();
-    bot.navigate.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE:2};
+    bot.navigate.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE: 2};
     bot.navigate.ENUMStatus = {Complete: 0, Incomplete: 1};
 
     bot.navigate.getSuccessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')));
