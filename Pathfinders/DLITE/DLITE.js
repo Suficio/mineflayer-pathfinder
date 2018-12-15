@@ -15,7 +15,7 @@ module.exports = function(bot, sp, ep)
 
     function CalculateKey(s)
     {
-        return [Math.min(s.g, s.rhs) + bot.navigate.HEURISTIC(R.s_start, s) + R.km, Math.min(s.g, s.rhs)];
+        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(R.S.start.p, s.p) + R.km, Math.min(s.g, s.rhs)];
     }
 
     function UpdateVertex(u)
@@ -33,10 +33,9 @@ module.exports = function(bot, sp, ep)
         const R = this;
         const CSPPromise = new Promise(function(resolve)
         {
-            let closest = R.s_goal;
-
-            for (let i = 0; i < bot.navigate.MAX_EXPANSIONS && R.U.size !== 0 &&
-                (CompareKeys(R.U.peek().k, CalculateKey(R.s_start)) || R.s_start.rhs > R.s_start.g); i++)
+            let closest = R.S.goal;
+            for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && R.U.size !== 0 &&
+                (CompareKeys(R.U.peek().k, CalculateKey(R.S.start)) || R.S.start.rhs > R.S.start.g); i++)
             {
                 const u = R.U.peek();
                 const k_old = u.k;
@@ -49,11 +48,11 @@ module.exports = function(bot, sp, ep)
                     u.g = u.rhs;
                     R.U.pop(); // U.remove from first
 
-                    const predecessors = bot.navigate.getPredecessors(u.p);
+                    const predecessors = bot.pathfinder.getPredecessors(u.p);
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if (s !== R.s_goal) s.rhs = Math.min(s.rhs, bot.navigate.HEURISTIC(s, u) + u.g);
+                        if (s !== R.S.goal) s.rhs = Math.min(s.rhs, bot.pathfinder.COST(s.p, u.p) + u.g);
                         R.UpdateVertex(s);
                     }
                 }
@@ -62,22 +61,22 @@ module.exports = function(bot, sp, ep)
                     const g_old = u.g;
                     u.g = Number.POSITIVE_INFINITY;
 
-                    const predecessors = bot.navigate.getPredecessors(u.p);
+                    const predecessors = bot.pathfinder.getPredecessors(u.p);
                     predecessors.push(u.p); // ∪ {u}
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
-                        if (floatEqual(s, bot.navigate.HEURISTIC(s, u) + g_old))
+                        if (floatEqual(s, bot.pathfinder.COST(s.p, u.p) + g_old))
                         {
-                            if (s !== R.s_goal)
+                            if (s !== R.S.goal)
                             {
                                 s.rhs = Number.POSITIVE_INFINITY;
 
-                                const successors = bot.navigate.getSuccessors(u.p);
+                                const successors = bot.pathfinder.getSuccessors(u.p);
                                 for (let m = 0, len = successors.length; m < len; m++)
                                 {
                                     const sp = new R.State(successors[m]);
-                                    const cost = bot.navigate.HEURISTIC(s, sp) + sp.g;
+                                    const cost = bot.pathfinder.COST(s.p, sp.p) + sp.g;
                                     if (s.rhs > cost) s.rhs = cost;
                                 }
                             }
@@ -85,14 +84,15 @@ module.exports = function(bot, sp, ep)
                         R.UpdateVertex(s);
                     }
                 }
+                // console.log(u);
 
                 // Storest closest element
-                if (closest.p.distanceTo(R.s_start.p) > R.U.peek().p.distanceTo(R.s_start.p)) closest = R.U.peek();
+                if (fastDistance(closest.p, R.S.start.p) > fastDistance(R.U.peek().p, R.S.start.p)) closest = R.U.peek();
             }
-            if (R.s_start.rhs === Number.POSITIVE_INFINITY)
-                resolve({ENUMStatus: bot.navigate.ENUMStatus.Incomplete, State: closest});
+            if (R.S.start.rhs === Number.POSITIVE_INFINITY)
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
             else
-                resolve({ENUMStatus: bot.navigate.ENUMStatus.Complete, State: closest});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: closest});
         });
 
         return CSPPromise;
@@ -110,4 +110,13 @@ function floatEqual(f1, f2)
 {
     if (f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
     return Math.abs(f1 - f2) < Number.EPSILON;
+}
+
+function fastDistance(p1, p2)
+{
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    const dz = p1.z - p2.z;
+
+    return dx * dx + dy * dy + dz * dz;
 }

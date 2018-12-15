@@ -24,7 +24,7 @@ function ASTARReturnState(MainPromise)
             State = State.cF;
             Path.push(State.p);
         }
-        ReturnState.Path = Path;
+        ReturnState.path = Path;
     })
         .catch(function() {return;});
 }
@@ -100,30 +100,30 @@ module.exports = function(bot, sp, ep)
         const end = new State(ep.floored());
         const start = new State(sp.floored());
         start.g = 0;
-        start.f = bot.navigate.HEURISTIC(start, end);
+        start.f = bot.pathfinder.HEURISTIC(start.p, end.p);
 
         O.push(start);
 
-        for (let i = 0; i < bot.navigate.MAX_EXPANSIONS && O.size !== 0; i++)
+        for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
         {
             const current = O.pop();
             if (current.p.equals(end.p))
-                return resolve({ENUMStatus: bot.navigate.ENUMStatus.Complete, State: current});
+                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: current});
 
             C.push(current);
 
-            const successors = bot.navigate.getSuccessors(current.p);
+            const successors = bot.pathfinder.getSuccessors(current.p);
             for (let n = 0, len = successors.length; n < len; n++)
             {
                 if (C.check(successors[n])) continue;
                 const s = new State(successors[n]);
 
-                const tg = current.g + bot.navigate.COST(current, s);
+                const tg = current.g + bot.pathfinder.COST(current.p, s.p);
                 if (tg >= s.g) continue;
 
                 s.cF = current;
                 s.g = tg;
-                s.f = s.g + bot.navigate.HEURISTIC(s, end);
+                s.f = s.g + bot.pathfinder.HEURISTIC(s.p, end.p);
 
                 const m = O.check(s);
                 if (!m) O.push(s); else O.replace(m, s);
@@ -134,7 +134,7 @@ module.exports = function(bot, sp, ep)
         };
 
         console.log('WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
-        return resolve({ENUMStatus: bot.navigate.ENUMStatus.Incomplete, State: closest});
+        return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
     });
 
     return new ASTARReturnState(MainPromise);

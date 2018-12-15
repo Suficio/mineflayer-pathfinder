@@ -88,9 +88,9 @@
         {"type":"blockconditions","coordinates":[2,2,0],"conditions":[
         
             {"type":"nc_condition","coordinates":[2,1,0],"condition":"solid"},
+            {"type":"nc_condition","coordinates":[0,3,0],"condition":"empty"},
             {"type":"nc_condition","coordinates":[0,4,0],"condition":"empty"},
 
-            {"type":"condition","coordinates":[0,3,0],"condition":"empty"},
             {"type":"condition","coordinates":[1,4,0],"condition":"empty"},
             {"type":"condition","coordinates":[1,1,0],"condition":"empty"},
             {"type":"condition","coordinates":[2,2,0],"condition":"empty"},
@@ -100,6 +100,7 @@
             {"type":"blockconditions","coordinates":[3,2,0],"conditions":[
 
                 {"type":"nc_condition","coordinates":[3,1,0],"condition":"solid"},
+                {"type":"nc_condition","coordinates":[0,3,0],"condition":"empty"},
                 {"type":"nc_condition","coordinates":[0,4,0],"condition":"empty"},
                 
                 {"type":"condition","coordinates":[3,2,0],"condition":"empty"},
@@ -119,6 +120,7 @@
                     {"type":"blockconditions","coordinates":[5,2,0],"conditions":[
 
                         {"type":"condition","coordinates":[5,1,0],"condition":"solid"},
+                        {"type":"condition","coordinates":[1,0,0],"condition":"empty"},
                         {"type":"condition","coordinates":[2,1,0],"condition":"empty"},
                         {"type":"condition","coordinates":[5,2,0],"condition":"empty"},
                         {"type":"condition","coordinates":[5,3,0],"condition":"empty"},

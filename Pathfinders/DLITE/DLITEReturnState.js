@@ -46,7 +46,7 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
     };
     U.update = function(i, k)
     {
-        // Priority queue handles the perlocation automatically eitherway
+        // Priority queue handles the percolation automatically eitherway
         this.array[i].k = k;
     };
 
@@ -54,10 +54,10 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
     U.remove = U._removeAt;
     U.pop = U.poll;
 
-    this.U = U;
-    this.S = S;
+    Object.defineProperty(this, 'U', {value: U, enumerable: false});
+    Object.defineProperty(this, 'S', {value: S, enumerable: false});
 
-    this.State = function(p)
+    State = function(p)
     {
         if (S.check(p))
             return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
@@ -73,24 +73,27 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         }
     };
 
+    Object.defineProperty(this, 'State', {value: State, enumerable: false});
+
     // Algorithm
     Initialize.call(this, bot, sp, ep, UpdateVertex, ComputeShortestPath);
 
     const R = this;
     this.path = {};
-    this.path._peek = function()
+
+    function _peek()
     {
         // First part of Main() in D*Lite
-        if (R.s_start === R.s_goal) return undefined;
+        if (R.S.start === R.S.goal) return undefined;
 
         let minState;
         let minCost = Number.POSITIVE_INFINITY;
 
-        const successors = bot.navigate.getSuccessors(R.s_start.p);
+        const successors = bot.pathfinder.getSuccessors(R.S.start.p);
         for (let n = 0, len = successors.length; n < len; n++)
         {
             const sp = new R.State(successors[n]);
-            const cost = bot.navigate.HEURISTIC(R.s_start, sp) + sp.g;
+            const cost = bot.pathfinder.COST(R.S.start.p, sp.p) + sp.g;
             if (minCost > cost)
             {
                 minCost = cost;
@@ -99,7 +102,9 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         }
 
         return minState;
-    };
+    }
+    Object.defineProperty(this.path, '_peek', {value: _peek, enumerable: false});
+
     this.path.peek = function()
     {
         const temp = this._peek();
@@ -112,7 +117,7 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         const temp = this._peek();
         if (temp !== undefined)
         {
-            R.s_start = temp;
+            R.S.start = temp;
             return temp.p;
         }
         else return undefined;
@@ -121,33 +126,34 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
 
 function Initialize(bot, sp, ep, UpdateVertex, ComputeShortestPath)
 {
-    this.km = 0;
-    this.UpdateVertex = UpdateVertex;
-    this.ComputeShortestPath = ComputeShortestPath;
+    Object.defineProperty(this, 'km', {value: 0, enumerable: false});
+    Object.defineProperty(this, 'UpdateVertex', {value: UpdateVertex, enumerable: false});
+    Object.defineProperty(this, 'ComputeShortestPath', {value: ComputeShortestPath, enumerable: false});
 
-    this.s_start = new this.State(sp);
-    this.s_goal = new this.State(ep);
-    this.s_goal.rhs = 0;
+    this.S.start = new this.State(sp);
+    this.S.goal = new this.State(ep);
+    this.S.goal.rhs = 0;
 
-    this.s_last = this.s_start;
+    this.S.last = this.S.start;
 
-    this.U.insert(this.s_goal, [bot.navigate.HEURISTIC(this.s_start, this.s_goal), 0]);
+    this.U.insert(this.S.goal, [bot.pathfinder.HEURISTIC(this.S.start.p, this.S.goal.p), 0]);
 
-    const R = this; // ComputeShortestPath has to be run initially
+    const R = this;
     this.on = function(Callback)
     {
+        // ComputeShortestPath has to be run initially
         this.ComputeShortestPath().then(function(ReturnState)
         {
             R.ENUMStatus = ReturnState.ENUMStatus;
             // Should the path be incomplete, sets the start point to the closest point to the intended
             // start point, to which a replan can be attempted using a different algorithm.
-            if (ReturnState.ENUMStatus === bot.navigate.ENUMStatus.Incomplete)
+            if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
             {
-                console.log(
+                console.warn(
                     'WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
                     'Use another algorithm to reach the valid start point before attempting D*Lite'
                 );
-                R.s_start = ReturnState.State;
+                R.S.start = ReturnState.State;
             }
 
             Callback(R);

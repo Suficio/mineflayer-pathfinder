@@ -55,7 +55,6 @@
             {"type":"blockconditions","coordinates":[3,1,0],"conditions":[
 
                 {"type":"condition","coordinates":[3,0,0],"condition":"solid"},
-                {"type":"condition","coordinates":[2,0,0],"condition":"empty"},
                 {"type":"condition","coordinates":[3,1,0],"condition":"empty"},
                 {"type":"condition","coordinates":[3,2,0],"condition":"empty"}
 

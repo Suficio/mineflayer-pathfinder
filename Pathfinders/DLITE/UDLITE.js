@@ -15,20 +15,20 @@ module.exports = function(bot, sp, ep)
 
     function CalculateKey(s)
     {
-        return [Math.min(s.g, s.rhs) + bot.navigate.HEURISTIC(R.s_start, s) + R.km, Math.min(s.g, s.rhs)];
+        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(R.S.start.p, s.p) + R.km, Math.min(s.g, s.rhs)];
     }
 
     function UpdateVertex(u)
     {
-        if (u !== this.s_goal)
+        if (u !== this.S.goal)
         {
             u.rhs = Number.POSITIVE_INFINITY;
 
-            const successors = bot.navigate.getSuccessors(u.p);
+            const successors = bot.pathfinder.getSuccessors(u.p);
             for (let n = 0, len = successors.length; n < len; n++)
             {
                 const sp = new R.State(successors[n]);
-                const cost = bot.navigate.HEURISTIC(u, sp) + sp.g;
+                const cost = bot.pathfinder.COST(u.p, sp.p) + sp.g;
                 if (u.rhs > cost) u.rhs = cost;
             }
         }
@@ -43,10 +43,10 @@ module.exports = function(bot, sp, ep)
         const R = this;
         const CSPPromise = new Promise(function(resolve)
         {
-            let closest = R.s_goal;
+            let closest = R.S.goal;
 
-            for (let i = 0; i < bot.navigate.MAX_EXPANSIONS && R.U.size !== 0 &&
-                (CompareKeys(R.U.peek().k, CalculateKey(R.s_start)) || !floatEqual(R.s_start.rhs, R.s_start.g)); i++)
+            for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && R.U.size !== 0 &&
+                (CompareKeys(R.U.peek().k, CalculateKey(R.S.start)) || !floatEqual(R.S.start.rhs, R.S.start.g)); i++)
             {
                 const u = R.U.pop();
                 const k_old = u.k;
@@ -58,7 +58,7 @@ module.exports = function(bot, sp, ep)
                 {
                     u.g = u.rhs;
 
-                    const predecessors = bot.navigate.getPredecessors(u.p);
+                    const predecessors = bot.pathfinder.getPredecessors(u.p);
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
@@ -69,7 +69,7 @@ module.exports = function(bot, sp, ep)
                 {
                     u.g = Number.POSITIVE_INFINITY;
 
-                    const predecessors = bot.navigate.getPredecessors(u.p);
+                    const predecessors = bot.pathfinder.getPredecessors(u.p);
                     predecessors.push(u.p); // ∪ {u}
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
@@ -79,12 +79,12 @@ module.exports = function(bot, sp, ep)
                 }
 
                 // Storest closest element
-                if (closest.p.distanceTo(R.s_start.p) > u.p.distanceTo(R.s_start.p)) closest = u;
+                if (fastDistance(closest.p, R.S.start.p) > fastDistance(u.p, R.S.start.p)) closest = u;
             }
-            if (R.s_start.g === Number.POSITIVE_INFINITY)
-                resolve({ENUMStatus: bot.navigate.ENUMStatus.Incomplete, State: closest});
+            if (R.S.start.g === Number.POSITIVE_INFINITY)
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
             else
-                resolve({ENUMStatus: bot.navigate.ENUMStatus.Complete, State: closest});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: closest});
         });
 
         return CSPPromise;
@@ -102,4 +102,13 @@ function floatEqual(f1, f2)
 {
     if (f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
     return Math.abs(f1 - f2) < Number.EPSILON;
+}
+
+function fastDistance(p1, p2)
+{
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    const dz = p1.z - p2.z;
+
+    return dx * dx + dy * dy + dz * dz;
 }
