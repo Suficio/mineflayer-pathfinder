@@ -1,76 +1,106 @@
-# Algorithm Documentation
+# Mineflayer-Pathfinder
+Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for Mineflayer found under: [https://github.com/superjoe30/mineflayer/](https://github.com/superjoe30/mineflayer/)
 
 ## Table of Contents
-- [Algorithm Documentation](#algorithm-documentation)
+- [Mineflayer-Pathfinder](#mineflayer-pathfinder)
+    - [Features](#features)
     - [Table of Contents](#table-of-contents)
-    - [A* Pathfinding](#a-pathfinding)
-        - [ASTARReturnState](#astarreturnstate)
-            - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback)
-    - [D* Lite Pathfinding](#d-lite-pathfinding)
-        - [DLITEReturnState](#dlitereturnstate)
-            - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback-1)
-            - [ASTARReturnState.path.pop()](#astarreturnstatepathpop)
-            - [ASTARReturnState.path.peek()](#astarreturnstatepathpeek)
-            - [ASTARReturnState.path.replan([startPoint, endPoint]) [Not implemented]](#astarreturnstatepathreplanstartpoint-endpoint-not-implemented)
-    - [JPS A* Pathfinding [Not implemented]](#jps-a-pathfinding-not-implemented)
+    - [Basic Usage](#basic-usage)
+    - [Advanced Usage](#advanced-usage)
+    - [Documentation](#documentation)
+        - [bot.pathfinder.to( startPoint, endPoint [, ENUMPathfinder])](#botpathfinderto-startpoint-endpoint--enumpathfinder)
+        - [bot.pathfinder.getSuccessors( position)](#botpathfindergetsuccessors-position)
+        - [bot.pathfinder.getPredecessors( position)](#botpathfindergetpredecessors-position)
+        - [bot.pathfinder.getBlock( position)](#botpathfindergetblock-position)
+        - [bot.pathfinder.MAX_EXPANSIONS](#botpathfindermax_expansions)
+        - [bot.pathfinder.HEURISTIC( startPoint, EndPoint)](#botpathfinderheuristic-startpoint-endpoint)
+        - [bot.pathfinder.COST](#botpathfindercost)
+        - [bot.pathfinder.ENUMPathfinder](#botpathfinderenumpathfinder)
+        - [bot.pathfinder.ENUMStatus](#botpathfinderenumstatus)
+    - [Algorithm Documentation](#algorithm-documentation)
 
-## A* Pathfinding
-Standard A* algorithim as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968.
-Should you want to learn how the algorithm works: https://en.wikipedia.org/wiki/A*_search_algorithm
+## Features
+* Provides high level API for determining paths between two points
+* Multiple algorithms for pathfinding, A* and D*Lite
+* Exposed internal functions to allow easier user replacement
+* Based solely on a promise based API
 
-### ASTARReturnState
+## Basic Usage
+To get started just paste this code into your bot:
+```js
+const mineflayer = require('mineflayer');
+const pathfinder = require('mineflayer-pathfinder');
+
+// Install pathfinder
+pathfinder(bot);
+
+bot.on('chat', function(username, message)
+{
+    // Find path to whoever talked
+    if (message === 'come')
+    {
+        bot.pathfinder
+            .to(
+                bot.entity.position,
+                bot.players[username].entity.position
+            )
+            .on(function(ReturnState)
+            {
+                const path = ReturnState.path;
+                // Move bot along path and youre done!
+            });
+    }
+}
+```
+
+## Advanced Usage
+
+## Documentation
+
+### bot.pathfinder.to( startPoint, endPoint [, ENUMPathfinder])
+Attempts a path search from the start point to the end point using the provided pathfinder.
+
+* `startPoint` - the point from which you want to find the path
+* `endPoint` - the end point of the path
+* `ENUMPathfinder` - specifies which pathfinding algorithim to use, see `bot.pathfinder.ENUMPathfinder`
+  * Defaults to `bot.pathfinder.ENUMPathfinder.ASTAR`
+
+Returns a return object based on the `ENUMPathfinder` provided, see Algorithim Documentation.
+
+### bot.pathfinder.getSuccessors( position)
+Determines positions to which the bot can move from the given position. There is some discussion about how the default function for `getSuccessors` works at [Default Conditions](https://github.com/CheezBarger/Mineflayer-Pathfinder/tree/master/DefaultConditions)
+
+`position` - coordinates of the position you want to move from
+
+### bot.pathfinder.getPredecessors( position)
+Determines positions from which the bot could have moved to the given position.
+
+`position` - coordinates of the position you want to move to
+
+### bot.pathfinder.getBlock( position)
+Slightly faster version of `bot.blockAt`
+
+`position` - coordinates of the block from which you want to get data
+
+### bot.pathfinder.MAX_EXPANSIONS
+Integer values which determines the maximum ammount of positions an algorithim will inspect, defaults to 80000.
+
+### bot.pathfinder.HEURISTIC( startPoint, EndPoint)
+Determines the heuristic value from the `startPoint` to the `endPoint`. Defaults to euclidean distance.
+
+### bot.pathfinder.COST
+Determines the cost value from the `startPoint` to the `endPoint`. Defaults to `bot.pathfinder.HEURISTIC`.
+
+### bot.pathfinder.ENUMPathfinder
 Object with the following properties:
-* `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
-* `path` - Array of points which form the entirety of the path.
+* `ASTAR` - Refers to the standard A* algorithm, see A* Pathfinding
+* `DLITE` - Refers to the optimized D* lite algorithm, see D* Lite Pathfinding
+* `UDLITE` - Refers to the unoptimized D* lite algorithm, see D* Lite Pathfinding
 
-#### ASTARReturnState.on( Callback)
-Provides a function to be executed when the path search has completed
-
-* `Callback` - Function to be executed once the path search has completed, `ASTARReturnState` passed as argument.
-
-
-## D* Lite Pathfinding
-D* Lite as per S. Koenig, 2002.
-Before using the algorithm it is important to familiarize yourself with its function at: http://idm-lab.org/bib/abstracts/papers/aaai02b.pdf.
-
-The pathfinder module exposes two different D* Lite implementations. One which is standard D* Lite implementation as presented in Figure 3 of the paper, and the other which is an optimized variant, presented in Figure 4.
-I have left the unoptimized variant in the code should anyone wish to familiarize themselves with how it works.
-
-The advantage of using D* Lite is it precomputes the global state between the start and end point, this allows for convenient changes of costs at runtime, which can be used for entity avoidance.
-
-However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively, especially when using the optimized variant of D* Lite. The unoptimized version has some more leeway in handling any inconsistencies between `getSuccessors` and `getPredecessors`.
-
-### DLITEReturnState
+### bot.pathfinder.ENUMStatus
 Object with the following properties:
-* `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
-* `path` - See `DLITEReturnState.path`
+* `Complete` - Occurs when the path could be successfully computed
+* `Incomplete` - Occurs when the pathfinder encountered an error or could not compute the complete path
 
-#### ASTARReturnState.on( Callback)
-Provides a function to be executed when the path search has completed
-
-* `Callback` - Function to be executed once the path search has completed, `DLITEReturnState` passed as argument.
-
-#### ASTARReturnState.path.pop()
-As the path is determined while the bot moves across it, pop must be used to determine the next location to move to.
-
-Returns position vector.
-
-#### ASTARReturnState.path.peek()
-Determines which path element will be popped next.
-
-Returns position vector.
-
-#### ASTARReturnState.path.replan([startPoint, endPoint]) \[Not implemented]
-
-
-## JPS A* Pathfinding \[Not implemented]
-Jump Point Search as per Daniel Harabor, Alban Grastien, 2011.
-Should you want to learn how the algorithm works: http://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf.
-
-I am including this here as there was some conversation about using JPS in the past (PrismarineJS/mineflayer-navigate#20). It should be noted that JPS is a method to replace the `getSuccessors` function, and then chooses which neighbour to go to using A*.
-
-It is also important to note that most of the movement in minecraft is done on the horizontal plane, so in effect 2D. This can be used to generalize the algorithim to a 2D version with additional checks whether the bot can change its y-level at a point.
-
-The significant speed improvement of JPS comes from quickly checking which blocks it can move to, however it is based on the assumption that you can check what kind of block exists at a coordinate very quickly. To achieve this i wrote `bot.pathfinder.getBlock`, however I was not able to get JPS running faster than normal A*, hence why it is not included.
-
-Should anyone be inclined to attempt to implement JPS, you can do so by replacing `bot.pathfinder.getSuccessors` with your JPS function for obtaining neighbours.
+## Algorithm Documentation
+Detailed overview of the algorithms used avaliable at [Algorithm Documentation](https://github.com/CheezBarger/Mineflayer-Pathfinder/tree/master/Pathfinders)
