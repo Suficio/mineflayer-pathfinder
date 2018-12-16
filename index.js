@@ -7,10 +7,6 @@ const Path = require('path');
 
 module.exports = function(bot)
 {
-    const mcData = require('minecraft-data')(bot.version);
-    blocks = mcData.blocks;
-    blocksByStateId = mcData.blocksByStateId;
-
     // The greatest speedup that can be achieved at this point would be by optimizing the CheckBlockConditions function. It was purposefully built to be dynamic however
     // a hardcoded implementation could work so much much faster. That being said the successorconditions.json is not optimized either, one could implement a top
     // to bottom search considering the fact that once a block at the top is found, none of the blocks at the bottom will be accessible.
@@ -25,6 +21,7 @@ module.exports = function(bot)
     bot.pathfinder.getPredecessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')));
 
     // Native getBlock implementation too slow for this case
+    let blocks;
     bot.pathfinder.getBlock = function(absolutePoint)
     {
         // Get block cannot correctly identify the ammount of layers of snow at any block
@@ -37,6 +34,11 @@ module.exports = function(bot)
     // Main function to interact
     bot.pathfinder.to = function(Start, End, ENUMPathfinder)
     {
+        if (bot.version) // bot.version may not be yet initialized when run
+            blocks = require('minecraft-data')(bot.version).blocks;
+        else
+            return console.error('ERROR Pathfinder: Bot not yet initialized when pathfinder was run, ensure that bot.version is initialized');
+
         if (!ENUMPathfinder || ENUMPathfinder === bot.pathfinder.ENUMPathfinder.ASTAR)
             return require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
 
@@ -47,7 +49,6 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());
     };
 
-    // bot.pathfind.SCAFFOLD = false;
     bot.pathfinder.MAX_EXPANSIONS = 80000; // 80000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;

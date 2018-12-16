@@ -11,7 +11,10 @@ function State(p)
 function ASTARReturnState(MainPromise)
 {
     const ReturnState = this;
-    this.on = function(Callback) {MainPromise.then(function() {Callback(ReturnState);});};
+    this.on = function(Callback)
+    {
+        MainPromise.then(function() {Callback(ReturnState);});
+    };
 
     MainPromise.then(function(IntermediateObject)
     {
@@ -25,8 +28,7 @@ function ASTARReturnState(MainPromise)
             Path.push(State.p);
         }
         ReturnState.path = Path;
-    })
-        .catch(function() {return;});
+    }).catch(function() {return;});
 }
 
 module.exports = function(bot, sp, ep)
@@ -91,7 +93,7 @@ module.exports = function(bot, sp, ep)
     O.push = O.add;
     O.pop = O.poll;
 
-    const MainPromise = new Promise(function(resolve, reject)
+    const MainPromise = new Promise(function(resolve)
     {
         // Maintains the element with the best path
         let closest = new State(sp.floored());
@@ -133,7 +135,7 @@ module.exports = function(bot, sp, ep)
             if (current.f - current.g < closest.f - closest.g) closest = current;
         };
 
-        console.log('WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
+        console.log('WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
         return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
     });
 

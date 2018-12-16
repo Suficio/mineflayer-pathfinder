@@ -142,22 +142,24 @@ function Initialize(bot, sp, ep, UpdateVertex, ComputeShortestPath)
     this.on = function(Callback)
     {
         // ComputeShortestPath has to be run initially
-        this.ComputeShortestPath().then(function(ReturnState)
-        {
-            R.ENUMStatus = ReturnState.ENUMStatus;
-            // Should the path be incomplete, sets the start point to the closest point to the intended
-            // start point, to which a replan can be attempted using a different algorithm.
-            if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+        const MainPromise = this.ComputeShortestPath();
+        MainPromise
+            .then(function(ReturnState)
             {
-                console.warn(
-                    'WARNING: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
-                    'Use another algorithm to reach the valid start point before attempting D*Lite'
-                );
-                R.S.start = ReturnState.State;
-            }
+                R.ENUMStatus = ReturnState.ENUMStatus;
+                // Should the path be incomplete, sets the start point to the closest point to the intended
+                // start point, to which a replan can be attempted using a different algorithm.
+                if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                {
+                    console.warn(
+                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
+                        'Use another algorithm to reach the valid start point before attempting D*Lite'
+                    );
+                    R.S.start = ReturnState.State;
+                }
 
-            Callback(R);
-        });
+                Callback(R);
+            });
     };
 };
 

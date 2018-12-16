@@ -1,7 +1,7 @@
 {
   "name": "mineflayer-pathfinder",
   "version": "0.0.1",
-  "description": "Library for 3D pathfinding through mineflayer bot using A* and D*Lite algorithms.",
+  "description": "Fast, promise based, 3D pathfinding library for Mineflayer using A* and D*Lite algorithms.",
   "main": "index.js",
   "scripts": {
   },
