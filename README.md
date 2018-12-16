@@ -9,6 +9,22 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
 * Based solely on a promise based API
 
 ## Table of Contents
+- [Mineflayer-Pathfinder](#mineflayer-pathfinder)
+  * [Features](#features)
+  * [Table of Contents](#table-of-contents)
+  * [Basic Usage](#basic-usage)
+  * [Advanced Usage](#advanced-usage)
+  * [Documentation](#documentation)
+    + [bot.pathfinder.to](#botpathfinderto)
+    + [bot.pathfinder.getSuccessors](#botpathfindergetsuccessors)
+    + [bot.pathfinder.getPredecessors](#botpathfindergetpredecessors)
+    + [bot.pathfinder.getBlock](#botpathfindergetblock)
+    + [bot.pathfinder.MAX_EXPANSIONS](#botpathfindermax-expansions)
+    + [bot.pathfinder.HEURISTIC](#botpathfinderheuristic)
+    + [bot.pathfinder.COST](#botpathfindercost)
+    + [bot.pathfinder.ENUMPathfinder](#botpathfinderenumpathfinder)
+    + [bot.pathfinder.ENUMStatus](#botpathfinderenumstatus)
+  * [Algorithm Documentation](#algorithm-documentation)
 
 ## Basic Usage
 To get started just paste this code into your bot:
@@ -73,7 +89,7 @@ Integer values which determines the maximum ammount of positions an algorithim w
 ### bot.pathfinder.HEURISTIC( startPoint, EndPoint)
 Determines the heuristic value from the `startPoint` to the `endPoint`. Defaults to euclidean distance.
 
-### bot.pathfinder.COST
+### bot.pathfinder.COST( startPoint, EndPoint)
 Determines the cost value from the `startPoint` to the `endPoint`. Defaults to `bot.pathfinder.HEURISTIC`.
 
 ### bot.pathfinder.ENUMPathfinder
