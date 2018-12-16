@@ -9,22 +9,21 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
 * Based solely on a promise based API
 
 ## Table of Contents
-- [Mineflayer-Pathfinder](#mineflayer-pathfinder)
-    - [Features](#features)
-    - [Table of Contents](#table-of-contents)
-    - [Basic Usage](#basic-usage)
-    - [Advanced Usage](#advanced-usage)
-    - [Documentation](#documentation)
-        - [bot.pathfinder.to( startPoint, endPoint [, ENUMPathfinder])](#botpathfinderto-startpoint-endpoint--enumpathfinder)
-        - [bot.pathfinder.getSuccessors( position)](#botpathfindergetsuccessors-position)
-        - [bot.pathfinder.getPredecessors( position)](#botpathfindergetpredecessors-position)
-        - [bot.pathfinder.getBlock( position)](#botpathfindergetblock-position)
-        - [bot.pathfinder.MAX_EXPANSIONS](#botpathfindermax_expansions)
-        - [bot.pathfinder.HEURISTIC( startPoint, EndPoint)](#botpathfinderheuristic-startpoint-endpoint)
-        - [bot.pathfinder.COST](#botpathfindercost)
-        - [bot.pathfinder.ENUMPathfinder](#botpathfinderenumpathfinder)
-        - [bot.pathfinder.ENUMStatus](#botpathfinderenumstatus)
-    - [Algorithm Documentation](#algorithm-documentation)
+- [Features](#features)
+- [Table of Contents](#table-of-contents)
+- [Basic Usage](#basic-usage)
+- [Advanced Usage](#advanced-usage)
+- [Documentation](#documentation)
+    - [bot.pathfinder.to( startPoint, endPoint [, ENUMPathfinder])](#botpathfinderto-startpoint-endpoint--enumpathfinder)
+    - [bot.pathfinder.getSuccessors( position)](#botpathfindergetsuccessors-position)
+    - [bot.pathfinder.getPredecessors( position)](#botpathfindergetpredecessors-position)
+    - [bot.pathfinder.getBlock( position)](#botpathfindergetblock-position)
+    - [bot.pathfinder.MAX_EXPANSIONS](#botpathfindermax_expansions)
+    - [bot.pathfinder.HEURISTIC( startPoint, EndPoint)](#botpathfinderheuristic-startpoint-endpoint)
+    - [bot.pathfinder.COST](#botpathfindercost)
+    - [bot.pathfinder.ENUMPathfinder](#botpathfinderenumpathfinder)
+    - [bot.pathfinder.ENUMStatus](#botpathfinderenumstatus)
+- [Algorithm Documentation](#algorithm-documentation)
 
 ## Basic Usage
 To get started just paste this code into your bot:
