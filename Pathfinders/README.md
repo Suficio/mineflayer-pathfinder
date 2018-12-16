@@ -1,4 +1,19 @@
 # Algorithm Documentation
+
+## Table of Contents
+- [Algorithm Documentation](#algorithm-documentation)
+    - [Table of Contents](#table-of-contents)
+    - [A* Pathfinding](#a-pathfinding)
+        - [ASTARReturnState](#astarreturnstate)
+            - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback)
+    - [D* Lite Pathfinding](#d-lite-pathfinding)
+        - [DLITEReturnState](#dlitereturnstate)
+            - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback-1)
+            - [ASTARReturnState.path.pop()](#astarreturnstatepathpop)
+            - [ASTARReturnState.path.peek()](#astarreturnstatepathpeek)
+            - [ASTARReturnState.path.replan([startPoint, endPoint]) [Not implemented]](#astarreturnstatepathreplanstartpoint-endpoint-not-implemented)
+    - [JPS A* Pathfinding [Not implemented]](#jps-a-pathfinding-not-implemented)
+
 ## A* Pathfinding
 Standard A* algorithim as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968.
 Should you want to learn how the algorithm works: https://en.wikipedia.org/wiki/A*_search_algorithm
@@ -45,7 +60,7 @@ Determines which path element will be popped next.
 
 Returns position vector.
 
-#### ASTARReturnState.path.replan([startPoint, endPoint]) /[Not implemented]
+#### ASTARReturnState.path.replan([startPoint, endPoint]) \[Not implemented]
 
 
 ## JPS A* Pathfinding \[Not implemented]
