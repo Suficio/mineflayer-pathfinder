@@ -88,7 +88,7 @@ Integer values which determines the maximum ammount of positions an algorithim w
 ### bot.pathfinder.HEURISTIC( startPoint, EndPoint)
 Determines the heuristic value from the `startPoint` to the `endPoint`. Defaults to euclidean distance.
 
-### bot.pathfinder.COST
+### bot.pathfinder.COST( startPoint, EndPoint)
 Determines the cost value from the `startPoint` to the `endPoint`. Defaults to `bot.pathfinder.HEURISTIC`.
 
 ### bot.pathfinder.ENUMPathfinder
