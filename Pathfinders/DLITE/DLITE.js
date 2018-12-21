@@ -1,3 +1,4 @@
+'use strict';
 const Path = require('path');
 const DLITEReturnState = require(Path.resolve(__dirname, 'DLITEReturnState.js'));
 

@@ -1,3 +1,4 @@
+'use strict';
 const Heap = require('fastpriorityqueue');
 
 module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeShortestPath)
@@ -57,7 +58,7 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
     Object.defineProperty(this, 'U', {value: U, enumerable: false});
     Object.defineProperty(this, 'S', {value: S, enumerable: false});
 
-    State = function(p)
+    const State = function(p)
     {
         if (S.check(p))
             return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
@@ -75,8 +76,7 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
 
     Object.defineProperty(this, 'State', {value: State, enumerable: false});
 
-    // Algorithm
-    Initialize.call(this, bot, sp, ep, UpdateVertex, ComputeShortestPath);
+    // Path functions
 
     const R = this;
     this.path = {};
@@ -89,6 +89,7 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         let minState;
         let minCost = Number.POSITIVE_INFINITY;
 
+        // Get successors according to stored state.
         const successors = bot.pathfinder.getSuccessors(R.S.start.p);
         for (let n = 0, len = successors.length; n < len; n++)
         {
@@ -122,6 +123,9 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         }
         else return undefined;
     };
+
+    // Algorithm
+    Initialize.call(this, bot, sp, ep, UpdateVertex, ComputeShortestPath);
 };
 
 function Initialize(bot, sp, ep, UpdateVertex, ComputeShortestPath)
@@ -143,23 +147,19 @@ function Initialize(bot, sp, ep, UpdateVertex, ComputeShortestPath)
     {
         // ComputeShortestPath has to be run initially
         const MainPromise = this.ComputeShortestPath();
-        MainPromise
-            .then(function(ReturnState)
+        MainPromise.then(function(ReturnState)
+        {
+            R.ENUMStatus = ReturnState.ENUMStatus;
+            R.ClosestPoint = ReturnState.State.p;
+            if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
             {
-                R.ENUMStatus = ReturnState.ENUMStatus;
-                // Should the path be incomplete, sets the start point to the closest point to the intended
-                // start point, to which a replan can be attempted using a different algorithm.
-                if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
-                {
-                    console.warn(
-                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
-                        'Use another algorithm to reach the valid start point before attempting D*Lite'
-                    );
-                    R.S.start = ReturnState.State;
-                }
-
-                Callback(R);
-            });
+                console.warn(
+                    'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
+                    'Use another algorithm to reach the valid start point before attempting D*Lite'
+                );
+            }
+        });
+        MainPromise.then(function() {Callback(R);});
     };
 };
 

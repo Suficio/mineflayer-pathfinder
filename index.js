@@ -1,4 +1,5 @@
-EventEmitter = require('events').EventEmitter;
+'use strict';
+const EventEmitter = require('events').EventEmitter;
 const Vec3 = require('vec3');
 const Path = require('path');
 
@@ -15,10 +16,13 @@ module.exports = function(bot)
 
     bot.pathfinder = new EventEmitter();
     bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE: 2};
-    bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1};
+    bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1, Replan: 2};
 
-    bot.pathfinder.getSuccessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')));
-    bot.pathfinder.getPredecessors = gMS.bind(undefined, require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')));
+    Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false});
+    Object.defineProperty(bot.pathfinder, 'defaultPredecessors', {value: require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')), enumerable: false});
+
+    bot.pathfinder.getSuccessors = gMS.bind(undefined, bot.pathfinder.defaultSuccessors);
+    bot.pathfinder.getPredecessors = gMS.bind(undefined, bot.pathfinder.defaultPredecessors);
 
     // Native getBlock implementation too slow for this case
     let blocks;

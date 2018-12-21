@@ -1,3 +1,4 @@
+'use strict';
 const Heap = require('fastpriorityqueue');
 
 function State(p)
