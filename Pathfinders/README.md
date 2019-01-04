@@ -78,7 +78,7 @@ Returns position vector.
 Jump Point Search as per Daniel Harabor, Alban Grastien, 2011.
 Should you want to learn how the algorithm works: http://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf.
 
-I am including this here as there was some conversation about using JPS in the past (PrismarineJS/mineflayer-navigate#20). It should be noted that JPS is a method to replace the `getSuccessors` function, and then chooses which neighbour to go to using A*.
+I am including this here as there was some conversation about using JPS in the past (https://github.com/PrismarineJS/mineflayer-navigate/issues/20). It should be noted that JPS is a method to replace the `getSuccessors` function, and then chooses which neighbour to go to using A*.
 
 It is also important to note that most of the movement in minecraft is done on the horizontal plane, so in effect 2D. This can be used to generalize the algorithim to a 2D version with additional checks whether the bot can change its y-level at a point.
 
