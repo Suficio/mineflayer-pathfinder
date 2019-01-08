@@ -6,30 +6,8 @@ function State(p)
     this.p = p;
     this.g = Number.POSITIVE_INFINITY;
     this.f = Number.POSITIVE_INFINITY;
-    this.cF = null;
-}
 
-function ASTARReturnState(MainPromise)
-{
-    const ReturnState = this;
-    this.on = function(Callback)
-    {
-        MainPromise.then(function() {Callback(ReturnState);});
-    };
-
-    MainPromise.then(function(IntermediateObject)
-    {
-        ReturnState.ENUMStatus = IntermediateObject.ENUMStatus;
-
-        let State = IntermediateObject.State;
-        const Path = [State.p];
-        while (State.cF)
-        {
-            State = State.cF;
-            Path.push(State.p);
-        }
-        ReturnState.path = Path;
-    }).catch(function() {return;});
+    this.cF;
 }
 
 module.exports = function(bot, sp, ep)
@@ -43,6 +21,39 @@ module.exports = function(bot, sp, ep)
     // Converting the closed list to a one dimensional array should be considered, I did not manage to get an integer hashtable to work faster than the
     // current implementation, this could have been due to an expenisve computation of the hash, however easier to compute hashes collided too frequently.
     // Additionally nested arrays allow the AI to traverse the entirety of the world instead of being limited by integer limits.
+
+    function ASTARReturnState(MainPromise)
+    {
+        const ReturnState = this;
+        this.on = function(Callback)
+        {
+            MainPromise.then(function(IntermediateObject)
+            {
+                ReturnState.ENUMStatus = IntermediateObject.ENUMStatus;
+
+                if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                {
+                    ReturnState.ClosestPoint = IntermediateObject.State.p;
+                    console.warn(
+                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                        'returned path to closest valid end point'
+                    );
+                }
+
+                // Builds path
+                let State = IntermediateObject.State;
+                const Path = [State.p];
+                while (State.cF)
+                {
+                    State = State.cF;
+                    Path.push(State.p);
+                }
+                ReturnState.path = Path;
+
+                Callback(ReturnState);
+            }).catch(function(e) {console.error('ERROR Pathfinder:', e);});
+        };
+    }
 
     // Closed list functions
     const C = [];
@@ -136,7 +147,6 @@ module.exports = function(bot, sp, ep)
             if (current.f - current.g < closest.f - closest.g) closest = current;
         };
 
-        console.log('WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest path');
         return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
     });
 

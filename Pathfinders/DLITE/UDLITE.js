@@ -11,7 +11,7 @@ module.exports = function(bot, sp, ep)
     // The advantage of using D* Lite is it precomputes the global state between the start and end point, this
     // allows for convenient changes of costs at runtime, which can be used for entity avoidance.
 
-    const ReturnState = new DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeShortestPath);
+    const ReturnState = new DLITEReturnState(bot, sp, ep);
     const R = ReturnState;
 
     function CalculateKey(s)
@@ -19,9 +19,10 @@ module.exports = function(bot, sp, ep)
         return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(R.S.start.p, s.p) + R.km, Math.min(s.g, s.rhs)];
     }
 
+    Object.defineProperty(R, 'UpdateVertex', {value: UpdateVertex, enumerable: false});
     function UpdateVertex(u)
     {
-        if (u !== this.S.goal)
+        if (u !== R.S.goal)
         {
             u.rhs = Number.POSITIVE_INFINITY;
 
@@ -34,17 +35,17 @@ module.exports = function(bot, sp, ep)
             }
         }
 
-        const exists = this.U.check(u);
-        if (exists) this.U.remove(exists);
-        if (!floatEqual(u.g, u.rhs)) this.U.insert(u, CalculateKey(u));
+        const exists = R.U.check(u);
+        if (exists) R.U.remove(exists);
+        if (!floatEqual(u.g, u.rhs)) R.U.insert(u, CalculateKey(u));
     }
 
+    Object.defineProperty(R, 'ComputeShortestPath', {value: ComputeShortestPath, enumerable: false});
     function ComputeShortestPath()
     {
-        const R = this;
         const CSPPromise = new Promise(function(resolve)
         {
-            let closest = R.S.goal;
+            const closest = R.S.goal;
 
             for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && R.U.size !== 0 &&
                 (CompareKeys(R.U.peek().k, CalculateKey(R.S.start)) || !floatEqual(R.S.start.rhs, R.S.start.g)); i++)
@@ -80,16 +81,18 @@ module.exports = function(bot, sp, ep)
                 }
 
                 // Storest closest element
-                if (fastDistance(closest.p, R.S.start.p) > fastDistance(u.p, R.S.start.p)) closest = u;
+                // if (fastDistance(closest.p, R.S.start.p) > fastDistance(u.p, R.S.start.p)) closest = u;
             }
             if (R.S.start.g === Number.POSITIVE_INFINITY)
                 resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
             else
-                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: closest});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete});
         });
 
         return CSPPromise;
     }
+
+    R.Initialize();
 
     return ReturnState;
 };
@@ -105,11 +108,12 @@ function floatEqual(f1, f2)
     return Math.abs(f1 - f2) < Number.EPSILON;
 }
 
-function fastDistance(p1, p2)
+/* function fastDistance(p1, p2)
 {
+    // Just avoids using square root as we know that if p1^2 > p2^2 => p1 > p2
     const dx = p1.x - p2.x;
     const dy = p1.y - p2.y;
     const dz = p1.z - p2.z;
 
     return dx * dx + dy * dy + dz * dz;
-}
+}*/

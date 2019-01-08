@@ -1,7 +1,7 @@
 'use strict';
 const Heap = require('fastpriorityqueue');
 
-module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeShortestPath)
+module.exports = function DLITEReturnState(bot, sp, ep)
 {
     // Global state functions
     const S = [];
@@ -58,7 +58,8 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
     Object.defineProperty(this, 'U', {value: U, enumerable: false});
     Object.defineProperty(this, 'S', {value: S, enumerable: false});
 
-    const State = function(p)
+    Object.defineProperty(this, 'State', {value: State, enumerable: false});
+    function State(p)
     {
         if (S.check(p))
             return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
@@ -74,13 +75,11 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         }
     };
 
-    Object.defineProperty(this, 'State', {value: State, enumerable: false});
-
     // Path functions
-
     const R = this;
     this.path = {};
 
+    Object.defineProperty(this.path, '_peek', {value: _peek, enumerable: false});
     function _peek()
     {
         // First part of Main() in D*Lite
@@ -90,10 +89,11 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         let minCost = Number.POSITIVE_INFINITY;
 
         // Get successors according to stored state.
-        const successors = bot.pathfinder.getSuccessors(R.S.start.p);
+        const successors = bot.pathfinder.getSuccessors(R.S.start.p, true);
         for (let n = 0, len = successors.length; n < len; n++)
         {
             const sp = new R.State(successors[n]);
+            console.log(sp);
             const cost = bot.pathfinder.COST(R.S.start.p, sp.p) + sp.g;
             if (minCost > cost)
             {
@@ -104,8 +104,6 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
 
         return minState;
     }
-    Object.defineProperty(this.path, '_peek', {value: _peek, enumerable: false});
-
     this.path.peek = function()
     {
         const temp = this._peek();
@@ -124,42 +122,38 @@ module.exports = function DLITEReturnState(bot, sp, ep, UpdateVertex, ComputeSho
         else return undefined;
     };
 
-    // Algorithm
-    Initialize.call(this, bot, sp, ep, UpdateVertex, ComputeShortestPath);
-};
-
-function Initialize(bot, sp, ep, UpdateVertex, ComputeShortestPath)
-{
-    Object.defineProperty(this, 'km', {value: 0, enumerable: false});
-    Object.defineProperty(this, 'UpdateVertex', {value: UpdateVertex, enumerable: false});
-    Object.defineProperty(this, 'ComputeShortestPath', {value: ComputeShortestPath, enumerable: false});
-
-    this.S.start = new this.State(sp);
-    this.S.goal = new this.State(ep);
-    this.S.goal.rhs = 0;
-
-    this.S.last = this.S.start;
-
-    this.U.insert(this.S.goal, [bot.pathfinder.HEURISTIC(this.S.start.p, this.S.goal.p), 0]);
-
-    const R = this;
-    this.on = function(Callback)
+    this.Initialize = function()
     {
-        // ComputeShortestPath has to be run initially
-        const MainPromise = this.ComputeShortestPath();
-        MainPromise.then(function(ReturnState)
+        Object.defineProperty(this, 'km', {value: 0, enumerable: false});
+
+        this.S.start = new this.State(sp);
+        this.S.goal = new this.State(ep);
+        this.S.goal.rhs = 0;
+
+        this.S.last = this.S.start;
+
+        this.U.insert(this.S.goal, [bot.pathfinder.HEURISTIC(this.S.start.p, this.S.goal.p), 0]);
+
+        const MainPromise = R.ComputeShortestPath();
+        this.on = function(Callback)
         {
-            R.ENUMStatus = ReturnState.ENUMStatus;
-            R.ClosestPoint = ReturnState.State.p;
-            if (ReturnState.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+            MainPromise.then(function(IntermediateObject)
             {
-                console.warn(
-                    'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS, returned closest valid start point',
-                    'Use another algorithm to reach the valid start point before attempting D*Lite'
-                );
-            }
-        });
-        MainPromise.then(function() {Callback(R);});
+                R.ENUMStatus = IntermediateObject.ENUMStatus;
+
+                if (IntermediateObject.State)
+                    R.ClosestPoint = IntermediateObject.State.p;
+                if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                {
+                    console.warn(
+                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                        'returned path to closest valid end point'
+                    );
+                }
+
+                Callback(R);
+            }).catch(function(e) {console.error('ERROR Pathfinder:', e);});
+        };
     };
 };
 

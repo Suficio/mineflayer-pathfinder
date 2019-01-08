@@ -18,31 +18,45 @@ module.exports = function(bot)
     bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE: 2};
     bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1, Replan: 2};
 
-    Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false});
-    Object.defineProperty(bot.pathfinder, 'defaultPredecessors', {value: require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')), enumerable: false});
+    Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {
+        value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false,
+    });
+    Object.defineProperty(bot.pathfinder, 'defaultPredecessors', {
+        value: require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')), enumerable: false,
+    });
 
     bot.pathfinder.getSuccessors = gMS.bind(undefined, bot.pathfinder.defaultSuccessors);
     bot.pathfinder.getPredecessors = gMS.bind(undefined, bot.pathfinder.defaultPredecessors);
 
     // Native getBlock implementation too slow for this case
     let blocks;
-    bot.pathfinder.getBlock = function(absolutePoint)
+    bot.pathfinder.getBlock = function()
     {
-        // Get block cannot correctly identify the ammount of layers of snow at any block
-        const key = Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
-        const column = bot._chunkColumn(absolutePoint.x - key.x, absolutePoint.z - key.z);
+        if (bot.version) // bot.version may not be yet initialized when run
+        {
+            blocks = require('minecraft-data')(bot.version).blocks;
 
-        if (!column) return null; else return blocks[column.getBlockType(key)];
+            this.getBlock = function(absolutePoint)
+            {
+                // Get block cannot correctly identify the ammount of layers of snow at any block
+                const key = Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
+                const column = bot._chunkColumn(absolutePoint.x - key.x, absolutePoint.z - key.z);
+
+                if (!column) return null; else return blocks[column.getBlockType(key)];
+            };
+        }
+        else
+        {
+            return console.error(
+                'ERROR Pathfinder: Bot not yet initialized when getBlock was run,',
+                'ensure that bot.version is initialized'
+            );
+        }
     };
 
     // Main function to interact
     bot.pathfinder.to = function(Start, End, ENUMPathfinder)
     {
-        if (bot.version) // bot.version may not be yet initialized when run
-            blocks = require('minecraft-data')(bot.version).blocks;
-        else
-            return console.error('ERROR Pathfinder: Bot not yet initialized when pathfinder was run, ensure that bot.version is initialized');
-
         if (!ENUMPathfinder || ENUMPathfinder === bot.pathfinder.ENUMPathfinder.ASTAR)
             return require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
 
@@ -53,23 +67,23 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());
     };
 
-    bot.pathfinder.MAX_EXPANSIONS = 80000; // 80000
+    bot.pathfinder.MAX_EXPANSIONS = 20000; // 20000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 
-    function gMS(blockConditions, u)
+    function gMS(blockConditions, u, force)
     {
         const possiblePositions = [];
         for (let m = 0; m < 4; m++)
         {
             for (let i = 0, il = blockConditions.length; i < il; i++)
-                checkBlockConditions(possiblePositions, cardinalDirectionVectors3D[m], blockConditions[i], u);
+                checkBlockConditions(possiblePositions, cardinalDirectionVectors3D[m], blockConditions[i], u, force);
         }
 
         return possiblePositions;
     }
 
-    function checkBlockConditions(possiblePositions, directionVector, blockConditions, playerPosition)
+    function checkBlockConditions(possiblePositions, directionVector, blockConditions, playerPosition, force)
     {
         let failedCheck = false;
 
@@ -81,7 +95,11 @@ module.exports = function(bot)
             const type = condition.type;
 
             if (type === 'blockconditions')
-                checkBlockConditions(possiblePositions, directionVector, condition, playerPosition);
+                checkBlockConditions(possiblePositions, directionVector, condition, playerPosition, force);
+
+            // Forces the function to return all possible positions
+            else if (force && force === true)
+                continue;
 
             // Avoids evaulating additional conditions if the check already failed
             else if (failedCheck && type === 'nc_condition')
