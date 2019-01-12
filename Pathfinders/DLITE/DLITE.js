@@ -16,7 +16,7 @@ module.exports = function(bot, sp, ep)
 
     function CalculateKey(s)
     {
-        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(R.S.start.p, s.p) + R.km, Math.min(s.g, s.rhs)];
+        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(R.S.start.p, s.p) + R.k_m, Math.min(s.g, s.rhs)];
     }
 
     Object.defineProperty(R, 'UpdateVertex', {value: UpdateVertex, enumerable: false});
@@ -35,7 +35,6 @@ module.exports = function(bot, sp, ep)
     {
         const CSPPromise = new Promise(function(resolve)
         {
-            const closest = R.S.goal;
             for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && R.U.size !== 0 &&
                 (CompareKeys(R.U.peek().k, CalculateKey(R.S.start)) || R.S.start.rhs > R.S.start.g); i++)
             {
@@ -54,6 +53,7 @@ module.exports = function(bot, sp, ep)
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new R.State(predecessors[n]);
+
                         if (s !== R.S.goal) s.rhs = Math.min(s.rhs, bot.pathfinder.COST(s.p, u.p) + u.g);
                         R.UpdateVertex(s);
                     }
@@ -86,12 +86,9 @@ module.exports = function(bot, sp, ep)
                         R.UpdateVertex(s);
                     }
                 }
-
-                // Storest closest element
-                // if (fastDistance(closest.p, R.S.start.p) > fastDistance(R.U.peek().p, R.S.start.p)) closest = R.U.peek();
             }
             if (R.S.start.rhs === Number.POSITIVE_INFINITY)
-                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete});
             else
                 resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete});
         });
@@ -114,13 +111,3 @@ function floatEqual(f1, f2)
     if (f1 === Number.POSITIVE_INFINITY && f2 === Number.POSITIVE_INFINITY) return true;
     return Math.abs(f1 - f2) < Number.EPSILON;
 }
-
-/* function fastDistance(p1, p2)
-{
-    // Just avoids using square root as we know that if p1^2 > p2^2 => p1 > p2
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    const dz = p1.z - p2.z;
-
-    return dx * dx + dy * dy + dz * dz;
-}*/

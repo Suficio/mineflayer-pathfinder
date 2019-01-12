@@ -25,12 +25,12 @@ module.exports = function(bot)
         value: require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')), enumerable: false,
     });
 
-    bot.pathfinder.getSuccessors = gMS.bind(undefined, bot.pathfinder.defaultSuccessors);
-    bot.pathfinder.getPredecessors = gMS.bind(undefined, bot.pathfinder.defaultPredecessors);
+    bot.pathfinder.getSuccessors = getCardinalNeighbors.bind(undefined, bot.pathfinder.defaultSuccessors);
+    bot.pathfinder.getPredecessors = getCardinalNeighbors.bind(undefined, bot.pathfinder.defaultPredecessors);
 
     // Native getBlock implementation too slow for this case
     let blocks;
-    bot.pathfinder.getBlock = function()
+    bot.pathfinder.getBlock = function(absolutePoint)
     {
         if (bot.version) // bot.version may not be yet initialized when run
         {
@@ -41,13 +41,19 @@ module.exports = function(bot)
                 // Get block cannot correctly identify the ammount of layers of snow at any block
                 const key = Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
                 const column = bot._chunkColumn(absolutePoint.x - key.x, absolutePoint.z - key.z);
+                if (!column) return null;
 
-                if (!column) return null; else return blocks[column.getBlockType(key)];
+                const block = blocks[column.getBlockType(key)];
+                block.coordinates = absolutePoint;
+
+                return block;
             };
+
+            return this.getBlock(absolutePoint);
         }
         else
         {
-            return console.error(
+            console.error(
                 'ERROR Pathfinder: Bot not yet initialized when getBlock was run,',
                 'ensure that bot.version is initialized'
             );
@@ -67,23 +73,23 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());
     };
 
-    bot.pathfinder.MAX_EXPANSIONS = 20000; // 20000
+    bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 
-    function gMS(blockConditions, u, force)
+    function getCardinalNeighbors(blockConditions, u)
     {
         const possiblePositions = [];
         for (let m = 0; m < 4; m++)
         {
             for (let i = 0, il = blockConditions.length; i < il; i++)
-                checkBlockConditions(possiblePositions, cardinalDirectionVectors3D[m], blockConditions[i], u, force);
+                checkBlockConditions(possiblePositions, cardinalDirectionVectors3D[m], blockConditions[i], u);
         }
 
         return possiblePositions;
     }
 
-    function checkBlockConditions(possiblePositions, directionVector, blockConditions, playerPosition, force)
+    function checkBlockConditions(possiblePositions, directionVector, blockConditions, playerPosition)
     {
         let failedCheck = false;
 
@@ -95,11 +101,7 @@ module.exports = function(bot)
             const type = condition.type;
 
             if (type === 'blockconditions')
-                checkBlockConditions(possiblePositions, directionVector, condition, playerPosition, force);
-
-            // Forces the function to return all possible positions
-            else if (force && force === true)
-                continue;
+                checkBlockConditions(possiblePositions, directionVector, condition, playerPosition);
 
             // Avoids evaulating additional conditions if the check already failed
             else if (failedCheck && type === 'nc_condition')
@@ -109,18 +111,11 @@ module.exports = function(bot)
             {
                 const blockWorldCoordinate = Vec3(condition.coordinates).rproduct(directionVector).add(playerPosition);
                 const blockWorldData = bot.pathfinder.getBlock(blockWorldCoordinate);
-                if (blockWorldData)
+                if (!blockWorldData || blockWorldData.boundingBox !== condition.condition)
                 {
-                    if (
-                        (condition.condition === 'empty' && blockWorldData.boundingBox !== 'empty') ||
-                        (condition.condition === 'solid' && blockWorldData.boundingBox !== 'block')
-                    )
-                    {
-                        failedCheck = true; // If the block did not meet the conditions, the check is failed
-                        if (type === 'condition') break; // However if a condition failed then we can break the loop since no more blocks will meet their conditions.
-                    }
+                    failedCheck = true; // If the block did not meet the conditions, the check is failed
+                    if (type === 'condition') break; // However if a condition failed then we can break the loop since no more blocks will meet their conditions.
                 }
-                else failedCheck = true;
             }
         }
 

@@ -1,15 +1,6 @@
 'use strict';
 const Heap = require('fastpriorityqueue');
 
-function State(p)
-{
-    this.p = p;
-    this.g = Number.POSITIVE_INFINITY;
-    this.f = Number.POSITIVE_INFINITY;
-
-    this.cF;
-}
-
 module.exports = function(bot, sp, ep)
 {
     // A* as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968
@@ -56,8 +47,8 @@ module.exports = function(bot, sp, ep)
     }
 
     // Closed list functions
-    const C = [];
-    C.push = function(s)
+    const S = [];
+    S.push = function(s)
     {
         const x = s.p.x >>> 0;
         const y = s.p.y >>> 0;
@@ -69,7 +60,7 @@ module.exports = function(bot, sp, ep)
 
         this[x][y][s.p.z >>> 0] = s;
     };
-    C.check = function(p)
+    S.check = function(p)
     {
         const x = p.x >>> 0;
         if (this[x])
@@ -85,23 +76,33 @@ module.exports = function(bot, sp, ep)
     };
 
     // Open list functions
-    const O = new Heap(function(s1, s2)
-    {
-        return s1.f < s2.f;
-    });
+    const O = new Heap(function(s1, s2) {return s1.f < s2.f;});
     O.check = function(s)
     {
         for (let i = 0; i < this.size; i++)
-            if (this.array[i].p.equals(s.p)) return i;
+            if (this.array[i] === s) return i;
         return undefined;
     };
-    O.replace = function(i, s)
+
+    function State(p)
     {
-        // Priority queue handles the perlocation automatically eitherway
-        this.array[i] = s;
+        if (S.check(p))
+            return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
+        else
+        {
+            this.p = p;
+            this.g = Number.POSITIVE_INFINITY;
+            this.f = Number.POSITIVE_INFINITY;
+
+            this.cF;
+            this.C = false;
+
+            S.push(this);
+        }
     };
 
     // Maintain familiarity with original heap implementation
+    O.remove = O._removeAt;
     O.push = O.add;
     O.pop = O.poll;
 
@@ -120,31 +121,29 @@ module.exports = function(bot, sp, ep)
 
         for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
         {
-            const current = O.pop();
-            if (current.p.equals(end.p))
-                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: current});
+            const u = O.pop();
+            if (u === end)
+                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: u});
 
-            C.push(current);
-
-            const successors = bot.pathfinder.getSuccessors(current.p);
+            const successors = bot.pathfinder.getSuccessors(u.p);
             for (let n = 0, len = successors.length; n < len; n++)
             {
-                if (C.check(successors[n])) continue;
                 const s = new State(successors[n]);
+                const g_new = u.g + bot.pathfinder.COST(u.p, s.p);
 
-                const tg = current.g + bot.pathfinder.COST(current.p, s.p);
-                if (tg >= s.g) continue;
+                if (s.g <= g_new) continue;
+                else if (s.C === true)
+                    s.C = false;
 
-                s.cF = current;
-                s.g = tg;
+                s.cF = u;
+                s.g = g_new;
                 s.f = s.g + bot.pathfinder.HEURISTIC(s.p, end.p);
-
-                const m = O.check(s);
-                if (!m) O.push(s); else O.replace(m, s);
+                O.push(s);
             };
 
+            u.C = true;
             // Retains the closest element to the end
-            if (current.f - current.g < closest.f - closest.g) closest = current;
+            if (u.f - u.g < closest.f - closest.g) closest = u;
         };
 
         return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});

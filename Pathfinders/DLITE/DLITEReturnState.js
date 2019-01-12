@@ -1,5 +1,6 @@
 'use strict';
 const Heap = require('fastpriorityqueue');
+const Vec3 = require('vec3');
 
 module.exports = function DLITEReturnState(bot, sp, ep)
 {
@@ -69,7 +70,7 @@ module.exports = function DLITEReturnState(bot, sp, ep)
             this.g = Number.POSITIVE_INFINITY;
             this.rhs = Number.POSITIVE_INFINITY;
 
-            this.k;
+            this.k = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
 
             S.push(this);
         }
@@ -89,16 +90,18 @@ module.exports = function DLITEReturnState(bot, sp, ep)
         let minCost = Number.POSITIVE_INFINITY;
 
         // Get successors according to stored state.
-        const successors = bot.pathfinder.getSuccessors(R.S.start.p, true);
+        const successors = bot.pathfinder.getSuccessors(R.S.start.p);
         for (let n = 0, len = successors.length; n < len; n++)
         {
-            const sp = new R.State(successors[n]);
-            console.log(sp);
-            const cost = bot.pathfinder.COST(R.S.start.p, sp.p) + sp.g;
-            if (minCost > cost)
+            const sp = ExistingState(successors[n]);
+            if (sp)
             {
-                minCost = cost;
-                minState = sp;
+                const cost = bot.pathfinder.COST(R.S.start.p, sp.p) + sp.g;
+                if (minCost > cost)
+                {
+                    minCost = cost;
+                    minState = sp;
+                }
             }
         }
 
@@ -124,7 +127,7 @@ module.exports = function DLITEReturnState(bot, sp, ep)
 
     this.Initialize = function()
     {
-        Object.defineProperty(this, 'km', {value: 0, enumerable: false});
+        this.k_m = 0;
 
         this.S.start = new this.State(sp);
         this.S.goal = new this.State(ep);
@@ -140,9 +143,6 @@ module.exports = function DLITEReturnState(bot, sp, ep)
             MainPromise.then(function(IntermediateObject)
             {
                 R.ENUMStatus = IntermediateObject.ENUMStatus;
-
-                if (IntermediateObject.State)
-                    R.ClosestPoint = IntermediateObject.State.p;
                 if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
                 {
                     console.warn(
@@ -155,6 +155,71 @@ module.exports = function DLITEReturnState(bot, sp, ep)
             }).catch(function(e) {console.error('ERROR Pathfinder:', e);});
         };
     };
+
+    // Handles changes in the world state
+    bot.on('blockUpdate', function(_, newBlock)
+    {
+        const v = ExistingState(newBlock.position);
+        console.log(v);
+        console.log(R.S.start);
+        if (v && CompareKeys(v.k, R.S.start.k)) // Ensures we havent already passed that block
+        {
+            const OBSOLETEPromise = new Promise(function(resolve)
+            {
+                R.k_m = R.k_m + bot.pathfinder.HEURISTIC(R.S.last.p, R.S.start.p);
+                R.S.last = R.S.start;
+                // Since the event is only validated when a previously navigable vertex is blocked
+                // we need to only accomodate for one case. [c_old < c(u,v)]
+                const predecessors = bot.pathfinder.getPredecessors(v.p);
+                for (let n = 0, len = predecessors.length; n < len; n++)
+                {
+                    const u = ExistingState(predecessors[n]);
+                    const c_old = bot.pathfinder.COST(u.p, v.p);
+                    if (u)
+                    {
+                        if (floatEqual(u.rhs, c_old + v.g) && u !== R.S.goal)
+                        {
+                            u.rhs = Number.POSITIVE_INFINITY;
+
+                            const successors = bot.pathfinder.getSuccessors(u.p);
+                            for (let m = 0, len = successors.length; m < len; m++)
+                            {
+                                const sp = new R.State(successors[m]);
+                                const cost = bot.pathfinder.COST(u.p, sp.p) + sp.g;
+                                if (u.rhs > cost) u.rhs = cost;
+                            }
+                        }
+                    }
+
+                    R.UpdateVertex(u);
+                }
+
+                R.ComputeShortestPath().then(function(IntermediateObject)
+                {
+                    R.ENUMStatus = IntermediateObject.ENUMStatus;
+                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                    {
+                        console.warn(
+                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                            'returned path to closest valid end point'
+                        );
+                    }
+
+                    R.S.OBSOLETE = undefined;
+                    resolve(R);
+                });
+            });
+
+            R.S.OBSOLETE = OBSOLETEPromise;
+        }
+    });
+
+    function ExistingState(p)
+    {
+        if (R.S.check(p))
+            return R.S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
+        else return undefined;
+    }
 };
 
 function CompareKeys(k1, k2)
