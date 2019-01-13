@@ -59,9 +59,11 @@ It is important to previously check if a path between the start and end is possi
 ```js
 const mineflayer = require('mineflayer');
 const pathfinder = require('mineflayer-pathfinder');
+const move = require('mineflayer-move');
 
-// Install pathfinder
+// Install move and pathfinder
 pathfinder(bot);
+move(bot);
 
 bot.on('chat', function(username, message)
 {
