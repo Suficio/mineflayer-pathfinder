@@ -54,6 +54,45 @@ bot.on('chat', function(username, message)
 ```
 
 ## Advanced Usage
+The following code illustrates how a rudimentary D* Lite implementation of pathfinding could work.
+It is important to previously check if a path between the start and end is possible with A* or another algorithm.
+```js
+const mineflayer = require('mineflayer');
+const pathfinder = require('mineflayer-pathfinder');
+
+// Install pathfinder
+pathfinder(bot);
+
+bot.on('chat', function(username, message)
+{
+    if (message === 'come')
+    {
+        const endPoint = bot.players[username].entity.position.floored();
+
+        bot.pathfinder
+            .to(
+                bot.entity.position,
+                bot.players[username].entity.position,
+                bot.pathfinder.ENUMPathfinder.DLITE
+            )
+            .on(function(ReturnState)
+            {
+                bot.move.along(ReturnState.path).then(function(MoveReturn)
+                {
+                    // Checks if this is a replan as the peek method will return undefined.
+                    if (MoveReturn === bot.move.ENUMStatus.Arrived)
+                    {
+                        // Will call function specified in bot.pathfinder.on again, once replan is complete.
+                        if (!endPoint.equals(bot.entity.position.floored()))
+                            ReturnState.path.replan();
+                        else
+                            bot.chat('I\'ve arrived!');
+                    }
+                });
+            });
+    }
+}
+```
 
 ## Documentation
 

@@ -36,12 +36,10 @@ Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMS
 D* Lite as per S. Koenig, 2002.
 Before using the algorithm it is important to familiarize yourself with its function at: http://idm-lab.org/bib/abstracts/papers/aaai02b.pdf.
 
-The pathfinder module exposes two different D* Lite implementations. One which is standard D* Lite implementation as presented in Figure 3 of the paper, and the other which is an optimized variant, presented in Figure 4.
-I have left the unoptimized variant in the code should anyone wish to familiarize themselves with how it works.
-
+The pathfinder module exposes the D* Lite implementation, which is presented in Figure 4 of the paper.
 The advantage of using D* Lite is it precomputes the global state between the start and end point, this allows for convenient changes of costs at runtime, which can be used for entity avoidance.
 
-However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively, especially when using the optimized variant of D* Lite. The unoptimized version has some more leeway in handling any inconsistencies between `getSuccessors` and `getPredecessors`.
+However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively.
 
 ### DLITEReturnState
 Object with the following properties:
@@ -71,7 +69,8 @@ Determines which path element will be popped next.
 
 Returns position vector.
 
-#### DLITEReturnState.path.replan([startPoint, endPoint]) \[Not implemented]
+#### DLITEReturnState.path.replan()
+Recomputes the global state, when complete the function provided in `DLITEReturnState.on` is run again.
 
 
 ## JPS A* Pathfinding \[Not implemented]

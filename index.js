@@ -67,10 +67,10 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.DLITE)
-            return require(Path.resolve(__dirname, 'Pathfinders/DLITE/DLITE.js'))(bot, Start.floored(), End.floored());
+            return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
 
-        else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.UDLITE)
-            return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());
+        /* else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.UDLITE)
+            return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());*/
     };
 
     bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
