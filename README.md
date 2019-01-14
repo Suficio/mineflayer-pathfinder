@@ -142,7 +142,6 @@ Determines the cost value from the `startPoint` to the `endPoint`. Defaults to `
 Object with the following properties:
 * `ASTAR` - Refers to the standard A* algorithm, see A* Pathfinding
 * `DLITE` - Refers to the optimized D* lite algorithm, see D* Lite Pathfinding
-* `UDLITE` - Refers to the unoptimized D* lite algorithm, see D* Lite Pathfinding
 
 ### bot.pathfinder.ENUMStatus
 Object with the following properties:
