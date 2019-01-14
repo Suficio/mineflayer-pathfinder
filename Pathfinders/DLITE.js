@@ -15,6 +15,8 @@ module.exports = function(bot, sp, ep)
         const ReturnState = this;
         let ResolveFunction = function() {return;};
 
+        this.OBSOLETE = [];
+
         this.on = function(Callback)
         {
             ResolveFunction = function(IntermediateObject)
@@ -43,7 +45,7 @@ module.exports = function(bot, sp, ep)
         {
             // First part of Main() in D*Lite
             if (S.start === S.goal) return undefined;
-            if (ReturnState.OBSOLETE) return undefined;
+            if (ReturnState.OBSOLETE.length !== 0) return undefined;
 
             let minState;
             let minCost = Number.POSITIVE_INFINITY;
@@ -85,23 +87,19 @@ module.exports = function(bot, sp, ep)
         };
         this.path.replan = function()
         {
-            console.log('replan');
-            const v = ReturnState.OBSOLETE;
-            ReturnState.OBSOLETE = undefined;
-
-            k_m = k_m + bot.pathfinder.HEURISTIC(S.last.p, S.start.p);
-            S.last = S.start;
-
-            // Since the blockUpdate event is only validated when a previously navigable vertex is blocked
-            // we need to only accomodate for one case. [c_old < c(u,v)]
-            const predecessors = bot.pathfinder.getPredecessors(v.p);
-            for (let n = 0, len = predecessors.length; n < len; n++)
+            const v = ReturnState.OBSOLETE.pop();
+            if (v)
             {
-                const u = ExistingState(predecessors[n]);
-                if (u)
+                k_m = k_m + bot.pathfinder.HEURISTIC(S.last.p, S.start.p);
+                S.last = S.start;
+
+                // Since the blockUpdate event is only validated when a previously navigable vertex is blocked
+                // we need to only accomodate for one case. [c_old < c(u,v)]
+                const predecessors = bot.pathfinder.getPredecessors(v.p);
+                for (let n = 0, len = predecessors.length; n < len; n++)
                 {
-                    const c_old = bot.pathfinder.COST(u.p, v.p);
-                    if (floatEqual(u.rhs, c_old + v.g) && u !== S.goal)
+                    const u = new State(predecessors[n]);
+                    if (floatEqual(u.rhs, bot.pathfinder.COST(u.p, v.p) + v.g) && u !== S.goal)
                     {
                         u.rhs = Number.POSITIVE_INFINITY;
 
@@ -109,16 +107,20 @@ module.exports = function(bot, sp, ep)
                         for (let m = 0, len = successors.length; m < len; m++)
                         {
                             const sp = new State(successors[m]);
-                            const cost = bot.pathfinder.COST(u.p, sp.p) + sp.g;
-                            if (u.rhs > cost) u.rhs = cost;
+                            if (sp)
+                            {
+                                const cost = bot.pathfinder.COST(u.p, sp.p) + sp.g;
+                                if (u.rhs > cost) u.rhs = cost;
+                            }
                         }
                     }
+
+                    UpdateVertex(u);
                 }
 
-                UpdateVertex(u);
+                ComputeShortestPath().then(ResolveFunction);
             }
-
-            ComputeShortestPath().then(ResolveFunction);
+            else ResolveFunction();
         };
 
         // Handles changes in the world state
@@ -127,7 +129,7 @@ module.exports = function(bot, sp, ep)
             const v = ExistingState(newBlock.position);
             if (v && CompareKeys(v.k, S.start.k)) // Ensures we havent already passed that block
             {
-                ReturnState.OBSOLETE = v;
+                ReturnState.OBSOLETE.push(v);
                 U.remove(U.check(v));
                 S[v.p.x >>> 0][v.p.y >>> 0][v.p.z >>> 0] = undefined;
             }
@@ -178,8 +180,13 @@ module.exports = function(bot, sp, ep)
     };
     U.update = function(i, k)
     {
-    // Priority queue handles the percolation automatically eitherway
+        // Priority queue handles the percolation automatically eitherway
+        const k_old = this.array[i].k;
         this.array[i].k = k;
+
+        if (CompareKeys(k_old, k))
+            this._percolateDown(i);
+        else this._percolateUp(i);
     };
 
     // Maintain familiarity with original heap implementation
@@ -239,14 +246,11 @@ module.exports = function(bot, sp, ep)
                 const k_old = u.k;
                 const k_new = CalculateKey(u);
 
-                // console.log(u);
-
                 if (CompareKeys(k_old, k_new))
-                    U.update(u, k_new);
+                    U.update(0, k_new);
 
                 else if (u.g > u.rhs)
                 {
-                    // console.log('second');
                     u.g = u.rhs;
                     U.pop(); // U.remove from first
 
@@ -261,7 +265,6 @@ module.exports = function(bot, sp, ep)
                 }
                 else
                 {
-                    // console.log('third');
                     const g_old = u.g;
                     u.g = Number.POSITIVE_INFINITY;
 
@@ -270,13 +273,13 @@ module.exports = function(bot, sp, ep)
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new State(predecessors[n]);
-                        if (floatEqual(s, bot.pathfinder.COST(s.p, u.p) + g_old))
+                        if (floatEqual(s.rhs, bot.pathfinder.COST(s.p, u.p) + g_old))
                         {
-                            if (s !== R.S.goal)
+                            if (s !== S.goal)
                             {
                                 s.rhs = Number.POSITIVE_INFINITY;
 
-                                const successors = bot.pathfinder.getSuccessors(u.p);
+                                const successors = bot.pathfinder.getSuccessors(s.p);
                                 for (let m = 0, len = successors.length; m < len; m++)
                                 {
                                     const sp = new State(successors[m]);

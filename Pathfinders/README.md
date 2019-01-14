@@ -6,13 +6,17 @@
     - [A* Pathfinding](#a-pathfinding)
         - [ASTARReturnState](#astarreturnstate)
             - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback)
+        - [ASTARReturnState.ENUMState](#astarreturnstateenumstate)
+        - [ASTARReturnState.ClosestPoint](#astarreturnstateclosestpoint)
     - [D* Lite Pathfinding](#d-lite-pathfinding)
         - [DLITEReturnState](#dlitereturnstate)
-            - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback-1)
-            - [ASTARReturnState.path.pop()](#astarreturnstatepathpop)
-            - [ASTARReturnState.path.peek()](#astarreturnstatepathpeek)
-            - [ASTARReturnState.path.replan([startPoint, endPoint]) [Not implemented]](#astarreturnstatepathreplanstartpoint-endpoint-not-implemented)
-    - [JPS A* Pathfinding [Not implemented]](#jps-a-pathfinding-not-implemented)
+            - [DLITEReturnState.on( Callback)](#dlitereturnstateon-callback)
+        - [DLITEReturnState.ENUMState](#dlitereturnstateenumstate)
+        - [DLITEReturnState.ClosestPoint](#dlitereturnstateclosestpoint)
+            - [DLITEReturnState.path.pop()](#dlitereturnstatepathpop)
+            - [DLITEReturnState.path.peek()](#dlitereturnstatepathpeek)
+            - [DLITEReturnState.path.replan()](#dlitereturnstatepathreplan)
+    - [JPS A* Pathfinding \[Not implemented]](#jps-a-pathfinding-\not-implemented)
 
 ## A* Pathfinding
 Standard A* algorithim as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968.
@@ -30,6 +34,9 @@ Provides a function to be executed when the path search has completed
 
 ### ASTARReturnState.ENUMState
 Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successfull or not.
+
+### ASTARReturnState.ClosestPoint
+Set when algorithim the path search is incomplete, equal to the furthest position the bot could find a path to.
 
 
 ## D* Lite Pathfinding

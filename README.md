@@ -50,7 +50,7 @@ bot.on('chat', function(username, message)
                 // Move bot along path and youre done!
             });
     }
-}
+});
 ```
 
 ## Advanced Usage
@@ -70,30 +70,36 @@ bot.on('chat', function(username, message)
     if (message === 'come')
     {
         const endPoint = bot.players[username].entity.position.floored();
+        const startPoint = bot.entity.position.floored();
 
         bot.pathfinder
-            .to(
-                bot.entity.position,
-                bot.players[username].entity.position,
-                bot.pathfinder.ENUMPathfinder.DLITE
-            )
+            .to(startPoint, endPoint)
             .on(function(ReturnState)
             {
-                bot.move.along(ReturnState.path).then(function(MoveReturn)
-                {
-                    // Checks if this is a replan as the peek method will return undefined.
-                    if (MoveReturn === bot.move.ENUMStatus.Arrived)
+                // Checks if path is obstructed, if it is, navigate to closest point.
+                if (ReturnState.ENUMState === bot.pathfinder.ENUMStatus.Incomplete)
+                    endPoint = ReturnState.ClosestPoint;
+
+                bot.pathfinder
+                    .to(startPoint, endPoint, bot.pathfinder.ENUMPathfinder.DLITE)
+                    .on(function(ReturnState)
                     {
-                        // Will call function specified in bot.pathfinder.on again, once replan is complete.
-                        if (!endPoint.equals(bot.entity.position.floored()))
-                            ReturnState.path.replan();
-                        else
-                            bot.chat('I\'ve arrived!');
-                    }
-                });
+                        bot.move.along(ReturnState.path).then(function(MoveReturn)
+                        {
+                            // Checks if this is a replan as the peek method will return undefined.
+                            if (MoveReturn === bot.move.ENUMStatus.Arrived)
+                            {
+                                // Will call function specified in bot.pathfinder.on again, once replan is complete.
+                                if (!endPoint.equals(bot.entity.position.floored()))
+                                    ReturnState.path.replan();
+                                else
+                                    bot.chat('I\'ve arrived!');
+                            }
+                        });
+                    });
             });
     }
-}
+});
 ```
 
 ## Documentation
