@@ -237,8 +237,6 @@ module.exports = function(bot, sp, ep)
     {
         const CSPPromise = new Promise(function(resolve)
         {
-            const hrstart = process.hrtime();
-
             for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && U.size !== 0 &&
                 (CompareKeys(U.peek().k, CalculateKey(S.start)) || S.start.rhs > S.start.g); i++)
             {
@@ -296,9 +294,6 @@ module.exports = function(bot, sp, ep)
                 resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete});
             else
                 resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete});
-
-            const hrend = process.hrtime(hrstart);
-            bot.chat('D*LITE calculated world state in: ' + hrend[0] + 's ' + hrend[1] / 1000000 + 'ms');
         });
 
         return CSPPromise;

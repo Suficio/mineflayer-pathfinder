@@ -108,8 +108,6 @@ module.exports = function(bot, sp, ep)
 
     const MainPromise = new Promise(function(resolve)
     {
-        const hrastart = process.hrtime();
-
         // Maintains the element with the best path
         let closest = new State(sp.floored());
         closest.g = 0; // Otherwise POSITIVE_INFINITY - POSITIVE_INFINITY returns NaN
@@ -121,16 +119,12 @@ module.exports = function(bot, sp, ep)
 
         O.push(start);
 
-        for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
+        let i = 0;
+        for (; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
         {
             const u = O.pop();
             if (u === end)
-            {
-                const hraend = process.hrtime(hrastart);
-                bot.chat('New A* calculated world state in: ' + hraend[0] + 's ' + hraend[1] / 1000000 + 'ms');
-
                 return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: u});
-            }
 
             const successors = bot.pathfinder.getSuccessors(u.p);
             for (let n = 0, len = successors.length; n < len; n++)
@@ -152,9 +146,6 @@ module.exports = function(bot, sp, ep)
             // Retains the closest element to the end
             if (u.f - u.g < closest.f - closest.g) closest = u;
         };
-
-        const hraend = process.hrtime(hrastart);
-        bot.chat('New A* calculated world state in: ' + hraend[0] + 's ' + hraend[1] / 1000000 + 'ms');
 
         return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
     });

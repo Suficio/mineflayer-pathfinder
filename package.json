@@ -1,10 +1,8 @@
 {
   "name": "mineflayer-pathfinder",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fast, promise based, 3D pathfinding library for Mineflayer using A* and D*Lite algorithms.",
   "main": "index.js",
-  "scripts": {
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CheezBarger/Mineflayer-Pathfinder.git"

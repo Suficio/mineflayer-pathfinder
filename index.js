@@ -73,7 +73,7 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());*/
     };
 
-    bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
+    bot.pathfinder.MAX_EXPANSIONS = 120000; // 100000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 
