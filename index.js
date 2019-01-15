@@ -1,10 +1,6 @@
 'use strict';
-const EventEmitter = require('events').EventEmitter;
 const Vec3 = require('vec3');
 const Path = require('path');
-
-// const optVer = require('minecraft-protocol/src/version').defaultVersion;
-// const blockData = require('minecraft-data')(optVer).blocks;
 
 module.exports = function(bot)
 {
@@ -14,7 +10,7 @@ module.exports = function(bot)
 
     // All in all the user is encouraged to supply his own successor or predecessor functions.
 
-    bot.pathfinder = new EventEmitter();
+    bot.pathfinder = {};
     bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE: 2};
     bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1, Replan: 2};
 
@@ -68,9 +64,6 @@ module.exports = function(bot)
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.DLITE)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
-
-        /* else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.UDLITE)
-            return require(Path.resolve(__dirname, 'Pathfinders/DLITE/UDLITE.js'))(bot, Start.floored(), End.floored());*/
     };
 
     bot.pathfinder.MAX_EXPANSIONS = 120000; // 100000
