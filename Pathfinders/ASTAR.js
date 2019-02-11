@@ -16,6 +16,7 @@ module.exports = function(bot, sp, ep)
     function ASTARReturnState(MainPromise)
     {
         const ReturnState = this;
+
         this.on = function(Callback)
         {
             MainPromise.then(function(IntermediateObject)

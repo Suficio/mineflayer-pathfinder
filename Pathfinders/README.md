@@ -2,7 +2,6 @@
 
 ## Table of Contents
 - [Algorithm Documentation](#algorithm-documentation)
-    - [Table of Contents](#table-of-contents)
     - [A* Pathfinding](#a-pathfinding)
         - [ASTARReturnState](#astarreturnstate)
             - [ASTARReturnState.on( Callback)](#astarreturnstateon-callback)
@@ -16,7 +15,7 @@
             - [DLITEReturnState.path.pop()](#dlitereturnstatepathpop)
             - [DLITEReturnState.path.peek()](#dlitereturnstatepathpeek)
             - [DLITEReturnState.path.replan()](#dlitereturnstatepathreplan)
-    - [JPS A* Pathfinding \[Not implemented]](#jps-a-pathfinding-\not-implemented)
+    - [JPS A* Pathfinding [Not implemented]](#jps-a-pathfinding-not-implemented)
 
 ## A* Pathfinding
 Standard A* algorithim as per Peter E. Hart, Nils J. Nilsson, Bertram Raphael, 1968.
@@ -80,7 +79,7 @@ Returns position vector.
 Recomputes the global state, when complete the function provided in `DLITEReturnState.on` is run again.
 
 
-## JPS A* Pathfinding \[Not implemented]
+## JPS A* Pathfinding [Not implemented]
 Jump Point Search as per Daniel Harabor, Alban Grastien, 2011.
 Should you want to learn how the algorithm works: http://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf.
 

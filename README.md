@@ -86,14 +86,26 @@ bot.on('chat', function(username, message)
                     {
                         bot.move.along(ReturnState.path).then(function(MoveReturn)
                         {
-                            // Checks if this is a replan as the peek method will return undefined.
-                            if (MoveReturn === bot.move.ENUMStatus.Arrived)
+                            // Checks if bot hasnt moved since last replan
+                            if (lastPoint && lastPoint.equals(bot.entity.position.floored()))
+                                bot.chat('I\'ve been blocked!');
+
+                            else if (MoveReturn === bot.move.ENUMStatus.Arrived)
                             {
-                                // Will call function specified in bot.pathfinder.on again, once replan is complete.
+                                // Checks if this is a replan appropiate situation
                                 if (!endPoint.equals(bot.entity.position.floored()))
+                                {
+                                    lastPoint = bot.entity.position.floored();
+                                    // Will call this function again when completed
                                     ReturnState.path.replan();
+                                }
                                 else
                                     bot.chat('I\'ve arrived!');
+                            }
+                            else
+                            {
+                                lastPoint = bot.entity.position.floored();
+                                ReturnState.path.replan();
                             }
                         });
                     });

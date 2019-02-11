@@ -33,10 +33,9 @@ module.exports = function(bot, sp, ep)
                 Callback(ReturnState);
             };
 
-            MainPromise.then(function(IntermediateObject)
-            {
-                ResolveFunction(IntermediateObject);
-            }).catch(function(e) {console.error('ERROR Pathfinder:', e);});
+            MainPromise
+                .then(ResolveFunction)
+                .catch(function(e) {console.error('ERROR Pathfinder:', e);});
         };
 
         // Path functions

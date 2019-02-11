@@ -11,8 +11,8 @@ module.exports = function(bot)
     // All in all the user is encouraged to supply his own successor or predecessor functions.
 
     bot.pathfinder = {};
-    bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, UDLITE: 2};
-    bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1, Replan: 2};
+    bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1};
+    bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1};
 
     Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {
         value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false,
@@ -66,7 +66,7 @@ module.exports = function(bot)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
     };
 
-    bot.pathfinder.MAX_EXPANSIONS = 120000; // 100000
+    bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 
