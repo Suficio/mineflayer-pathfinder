@@ -15,35 +15,36 @@ module.exports = function(bot, sp, ep)
 
     function ASTARReturnState(MainPromise)
     {
-        const ReturnState = this;
+        const returnState = this;
 
-        this.on = function(Callback)
+        this.on = function(callback)
         {
-            MainPromise.then(function(IntermediateObject)
-            {
-                ReturnState.ENUMStatus = IntermediateObject.ENUMStatus;
-
-                if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+            MainPromise
+                .then(function(IntermediateObject)
                 {
-                    ReturnState.ClosestPoint = IntermediateObject.State.p;
-                    console.warn(
-                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
-                        'returned path to closest valid end point'
-                    );
-                }
+                    returnState.ENUMStatus = IntermediateObject.ENUMStatus;
 
-                // Builds path
-                let State = IntermediateObject.State;
-                const Path = [State.p];
-                while (State.cF)
-                {
-                    State = State.cF;
-                    Path.push(State.p);
-                }
-                ReturnState.path = Path;
+                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                    {
+                        console.warn(
+                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                            'returned path to closest valid end point'
+                        );
+                    }
 
-                Callback(ReturnState);
-            }).catch(function(e) {console.error('ERROR Pathfinder:', e);});
+                    // Builds path
+                    let state = IntermediateObject.state;
+                    const path = [state.c];
+                    while (state.cF)
+                    {
+                        state = state.cF;
+                        path.push(state.c);
+                    }
+                    returnState.path = path;
+
+                    callback(returnState);
+                })
+                .catch(function(e) {console.error('ERROR Pathfinder:', e);});
         };
     }
 
@@ -51,26 +52,25 @@ module.exports = function(bot, sp, ep)
     const S = [];
     S.push = function(s)
     {
-        const x = s.p.x >>> 0;
-        const y = s.p.y >>> 0;
+        const x = s.c.x >>> 0;
+        const y = s.c.y >>> 0;
 
         if (!this[x])
             this[x] = [];
         if (!this[x][y])
             this[x][y] = [];
 
-        this[x][y][s.p.z >>> 0] = s;
+        this[x][y][s.c.z >>> 0] = s;
     };
-    S.check = function(p)
+    S.check = function(c)
     {
-        const x = p.x >>> 0;
+        const x = c.x >>> 0;
         if (this[x])
         {
-            const y = p.y >>> 0;
+            const y = c.y >>> 0;
             if (this[x][y])
             {
-                if (this[x][y][p.z >>> 0])
-
+                if (this[x][y][c.z >>> 0])
                     return true;
             }
         } return false;
@@ -85,18 +85,18 @@ module.exports = function(bot, sp, ep)
         return undefined;
     };
 
-    function State(p)
+    function State(c)
     {
-        if (S.check(p))
-            return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
+        if (S.check(c))
+            return S[c.x >>> 0][c.y >>> 0][c.z >>> 0];
         else
         {
-            this.p = p;
+            this.c = c;
             this.g = Number.POSITIVE_INFINITY;
             this.f = Number.POSITIVE_INFINITY;
 
-            this.cF;
-            this.C = false;
+            this.p = null;
+            this.closed = false;
 
             S.push(this);
         }
@@ -109,46 +109,43 @@ module.exports = function(bot, sp, ep)
 
     const MainPromise = new Promise(function(resolve)
     {
-        // Maintains the element with the best path
-        let closest = new State(sp.floored());
-        closest.g = 0; // Otherwise POSITIVE_INFINITY - POSITIVE_INFINITY returns NaN
-
         const end = new State(ep.floored());
         const start = new State(sp.floored());
         start.g = 0;
-        start.f = bot.pathfinder.HEURISTIC(start.p, end.p);
+        start.f = bot.pathfinder.HEURISTIC(start.c, end.c);
 
         O.push(start);
 
-        let i = 0;
-        for (; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
+        let closest = start;
+
+        for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
         {
             const u = O.pop();
             if (u === end)
-                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, State: u});
+                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, state: u});
 
-            const successors = bot.pathfinder.getSuccessors(u.p);
+            const successors = bot.pathfinder.getSuccessors(u.c);
             for (let n = 0, len = successors.length; n < len; n++)
             {
                 const s = new State(successors[n]);
-                const g_new = u.g + bot.pathfinder.COST(u.p, s.p);
+                const g_new = u.g + bot.pathfinder.COST(u.c, s.c);
 
                 if (s.g <= g_new) continue;
-                else if (s.C === true)
-                    s.C = false;
+                else if (s.closed === true)
+                    s.closed = false;
 
-                s.cF = u;
+                s.p = u;
                 s.g = g_new;
-                s.f = s.g + bot.pathfinder.HEURISTIC(s.p, end.p);
+                s.f = s.g + bot.pathfinder.HEURISTIC(s.c, end.c);
                 O.push(s);
             };
 
-            u.C = true;
+            u.closed = true;
             // Retains the closest element to the end
             if (u.f - u.g < closest.f - closest.g) closest = u;
         };
 
-        return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, State: closest});
+        return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, state: closest});
     });
 
     return new ASTARReturnState(MainPromise);

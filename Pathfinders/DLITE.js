@@ -12,29 +12,26 @@ module.exports = function(bot, sp, ep)
 
     function DLITEReturnState(MainPromise)
     {
-        const ReturnState = this;
-        let ResolveFunction = function() {return;};
+        const returnState = this;
 
         this.OBSOLETE = [];
 
-        this.on = function(Callback)
+        this.on = function(callback)
         {
-            ResolveFunction = function(IntermediateObject)
-            {
-                ReturnState.ENUMStatus = IntermediateObject.ENUMStatus;
-                if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
-                {
-                    console.warn(
-                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
-                        'returned path to closest valid end point'
-                    );
-                }
-
-                Callback(ReturnState);
-            };
-
             MainPromise
-                .then(ResolveFunction)
+                .then(function(IntermediateObject)
+                {
+                    returnState.ENUMStatus = IntermediateObject.ENUMStatus;
+                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                    {
+                        console.warn(
+                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                            'returned path to closest valid end point'
+                        );
+                    }
+
+                    callback(returnState);
+                })
                 .catch(function(e) {console.error('ERROR Pathfinder:', e);});
         };
 
@@ -50,13 +47,13 @@ module.exports = function(bot, sp, ep)
             let minCost = Number.POSITIVE_INFINITY;
 
             // Get successors according to stored state.
-            const successors = bot.pathfinder.getSuccessors(S.start.p);
+            const successors = bot.pathfinder.getSuccessors(S.start.c);
             for (let n = 0, len = successors.length; n < len; n++)
             {
                 const sp = ExistingState(successors[n]);
                 if (sp)
                 {
-                    const cost = bot.pathfinder.COST(S.start.p, sp.p) + sp.g;
+                    const cost = bot.pathfinder.COST(S.start.c, sp.c) + sp.g;
                     if (minCost > cost)
                     {
                         minCost = cost;
@@ -89,48 +86,45 @@ module.exports = function(bot, sp, ep)
             const v = ReturnState.OBSOLETE.pop();
             if (v)
             {
-                k_m = k_m + bot.pathfinder.HEURISTIC(S.last.p, S.start.p);
+                k_m = k_m + bot.pathfinder.HEURISTIC(S.last.c, S.start.c);
                 S.last = S.start;
 
                 // Since the blockUpdate event is only validated when a previously navigable vertex is blocked
                 // we need to only accomodate for one case. [c_old < c(u,v)]
-                const predecessors = bot.pathfinder.getPredecessors(v.p);
+                const predecessors = bot.pathfinder.getPredecessors(v.c);
                 for (let n = 0, len = predecessors.length; n < len; n++)
                 {
                     const u = new State(predecessors[n]);
-                    if (floatEqual(u.rhs, bot.pathfinder.COST(u.p, v.p) + v.g) && u !== S.goal)
+                    if (floatEqual(u.rhs, bot.pathfinder.COST(u.c, v.c) + v.g) && u !== S.goal)
                     {
                         u.rhs = Number.POSITIVE_INFINITY;
 
-                        const successors = bot.pathfinder.getSuccessors(u.p);
+                        const successors = bot.pathfinder.getSuccessors(u.c);
                         for (let m = 0, len = successors.length; m < len; m++)
                         {
                             const sp = new State(successors[m]);
-                            if (sp)
-                            {
-                                const cost = bot.pathfinder.COST(u.p, sp.p) + sp.g;
-                                if (u.rhs > cost) u.rhs = cost;
-                            }
+                            const cost = bot.pathfinder.COST(u.c, sp.c) + sp.g;
+                            if (u.rhs > cost) u.rhs = cost;
                         }
                     }
 
-                    UpdateVertex(u);
+                    updateVertex(u);
                 }
 
-                ComputeShortestPath().then(ResolveFunction);
+                computeShortestPath().then(ResolveFunction);
             }
-            else ResolveFunction();
+            else computeShortestPath().then(ResolveFunction);
         };
 
         // Handles changes in the world state
         bot.on('blockUpdate', function(_, newBlock)
         {
             const v = ExistingState(newBlock.position);
-            if (v && CompareKeys(v.k, S.start.k)) // Ensures we havent already passed that block
+            if (v && compareKeys(v.k, S.start.k)) // Ensures we havent already passed that block
             {
                 ReturnState.OBSOLETE.push(v);
                 U.remove(U.check(v));
-                S[v.p.x >>> 0][v.p.y >>> 0][v.p.z >>> 0] = undefined;
+                S[v.c.x >>> 0][v.c.y >>> 0][v.c.z >>> 0] = undefined;
             }
         });
     };
@@ -139,33 +133,32 @@ module.exports = function(bot, sp, ep)
     const S = [];
     S.push = function(s)
     {
-        const x = s.p.x >>> 0;
-        const y = s.p.y >>> 0;
+        const x = s.c.x >>> 0;
+        const y = s.c.y >>> 0;
 
         if (!this[x])
             this[x] = [];
         if (!this[x][y])
             this[x][y] = [];
 
-        this[x][y][s.p.z >>> 0] = s;
+        this[x][y][s.c.z >>> 0] = s;
     };
-    S.check = function(p)
+    S.check = function(c)
     {
-        const x = p.x >>> 0;
+        const x = c.x >>> 0;
         if (this[x])
         {
-            const y = p.y >>> 0;
+            const y = c.y >>> 0;
             if (this[x][y])
             {
-                if (this[x][y][p.z >>> 0])
-
+                if (this[x][y][c.z >>> 0])
                     return true;
             }
         } return false;
     };
 
     // Priority queue functions
-    const U = new Heap(function(s1, s2) {return CompareKeys(s1.k, s2.k);});
+    const U = new Heap(function(s1, s2) {return compareKeys(s1.k, s2.k);});
     U.check = function(s)
     {
         for (let i = 0; i < this.size; i++)
@@ -179,11 +172,10 @@ module.exports = function(bot, sp, ep)
     };
     U.update = function(i, k)
     {
-        // Priority queue handles the percolation automatically eitherway
         const k_old = this.array[i].k;
         this.array[i].k = k;
 
-        if (CompareKeys(k_old, k))
+        if (compareKeys(k_old, k))
             this._percolateDown(i);
         else this._percolateUp(i);
     };
@@ -193,13 +185,13 @@ module.exports = function(bot, sp, ep)
     U.pop = U.poll;
 
     // State functions
-    function State(p)
+    function State(c)
     {
-        if (S.check(p))
-            return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
+        if (S.check(c))
+            return S[c.x >>> 0][c.y >>> 0][c.z >>> 0];
         else
         {
-            this.p = p;
+            this.c = c;
             this.g = Number.POSITIVE_INFINITY;
             this.rhs = Number.POSITIVE_INFINITY;
 
@@ -209,41 +201,41 @@ module.exports = function(bot, sp, ep)
         }
     }
 
-    function ExistingState(p)
+    function ExistingState(c)
     {
-        if (S.check(p))
-            return S[p.x >>> 0][p.y >>> 0][p.z >>> 0];
+        if (S.check(c))
+            return S[c.x >>> 0][c.y >>> 0][c.z >>> 0];
         else return undefined;
     }
 
     // Algorithm functions
-    function CalculateKey(s)
+    function calculateKey(s)
     {
-        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(S.start.p, s.p) + k_m, Math.min(s.g, s.rhs)];
+        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(S.start.c, s.c) + k_m, Math.min(s.g, s.rhs)];
     }
 
-    function UpdateVertex(u)
+    function updateVertex(u)
     {
         const exists = U.check(u); // Integer index
         const equals = floatEqual(u.g, u.rhs);
 
-        if (!equals && exists !== undefined) U.update(exists, CalculateKey(u));
-        else if (!equals && exists === undefined) U.insert(u, CalculateKey(u));
+        if (!equals && exists !== undefined) U.update(exists, calculateKey(u));
+        else if (!equals && exists === undefined) U.insert(u, calculateKey(u));
         else if (equals && exists !== undefined) U.remove(exists);
     }
 
-    function ComputeShortestPath()
+    function computeShortestPath()
     {
         const CSPPromise = new Promise(function(resolve)
         {
             for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && U.size !== 0 &&
-                (CompareKeys(U.peek().k, CalculateKey(S.start)) || S.start.rhs > S.start.g); i++)
+                (compareKeys(U.peek().k, calculateKey(S.start)) || S.start.rhs > S.start.g); i++)
             {
                 const u = U.peek();
                 const k_old = u.k;
-                const k_new = CalculateKey(u);
+                const k_new = calculateKey(u);
 
-                if (CompareKeys(k_old, k_new))
+                if (compareKeys(k_old, k_new))
                     U.update(0, k_new);
 
                 else if (u.g > u.rhs)
@@ -251,13 +243,13 @@ module.exports = function(bot, sp, ep)
                     u.g = u.rhs;
                     U.pop(); // U.remove from first
 
-                    const predecessors = bot.pathfinder.getPredecessors(u.p);
+                    const predecessors = bot.pathfinder.getPredecessors(u.c);
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new State(predecessors[n]);
 
-                        if (s !== S.goal) s.rhs = Math.min(s.rhs, bot.pathfinder.COST(s.p, u.p) + u.g);
-                        UpdateVertex(s);
+                        if (s !== S.goal) s.rhs = Math.min(s.rhs, bot.pathfinder.COST(s.c, u.c) + u.g);
+                        updateVertex(s);
                     }
                 }
                 else
@@ -265,30 +257,31 @@ module.exports = function(bot, sp, ep)
                     const g_old = u.g;
                     u.g = Number.POSITIVE_INFINITY;
 
-                    const predecessors = bot.pathfinder.getPredecessors(u.p);
-                    predecessors.push(u.p); // ∪ {u}
+                    const predecessors = bot.pathfinder.getPredecessors(u.c);
+                    predecessors.push(u.c); // ∪ {u}
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new State(predecessors[n]);
-                        if (floatEqual(s.rhs, bot.pathfinder.COST(s.p, u.p) + g_old))
+                        if (floatEqual(s.rhs, bot.pathfinder.COST(s.c, u.c) + g_old))
                         {
                             if (s !== S.goal)
                             {
                                 s.rhs = Number.POSITIVE_INFINITY;
 
-                                const successors = bot.pathfinder.getSuccessors(s.p);
+                                const successors = bot.pathfinder.getSuccessors(s.c);
                                 for (let m = 0, len = successors.length; m < len; m++)
                                 {
                                     const sp = new State(successors[m]);
-                                    const cost = bot.pathfinder.COST(s.p, sp.p) + sp.g;
+                                    const cost = bot.pathfinder.COST(s.c, sp.c) + sp.g;
                                     if (s.rhs > cost) s.rhs = cost;
                                 }
                             }
                         }
-                        UpdateVertex(s);
+                        updateVertex(s);
                     }
                 }
             }
+
             if (S.start.rhs === Number.POSITIVE_INFINITY)
                 resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete});
             else
@@ -310,13 +303,13 @@ module.exports = function(bot, sp, ep)
 
     U.insert(
         S.goal,
-        [bot.pathfinder.HEURISTIC(S.start.p, S.goal.p), 0]
+        [bot.pathfinder.HEURISTIC(S.start.c, S.goal.c), 0]
     );
 
-    return new DLITEReturnState(ComputeShortestPath());
+    return new DLITEReturnState(computeShortestPath());
 };
 
-function CompareKeys(k1, k2)
+function compareKeys(k1, k2)
 {
     return (floatEqual(k1[0], k2[0]) && k1[1] < k2[1]) || k1[0] < k2[0];
 }

@@ -11,7 +11,7 @@ module.exports = function(bot)
     // All in all the user is encouraged to supply his own successor or predecessor functions.
 
     bot.pathfinder = {};
-    bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1};
+    bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, LPASTAR: 2};
     bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1};
 
     Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {
@@ -64,6 +64,9 @@ module.exports = function(bot)
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.DLITE)
             return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
+
+        else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.LPASTAR)
+            return require(Path.resolve(__dirname, 'Pathfinders/LPASTAR.js'))(bot, Start.floored(), End.floored());
     };
 
     bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
