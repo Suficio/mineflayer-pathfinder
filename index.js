@@ -41,7 +41,7 @@ module.exports = function(bot)
                 // Get block cannot correctly identify the ammount of layers of snow at any block
                 const key = new Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
                 const column = bot._chunkColumn(absolutePoint.x - key.x, absolutePoint.z - key.z);
-                if (!column) return null;
+                if (!column) return undefined;
 
                 const block = blocks[column.getBlockType(key)];
                 block.coordinates = absolutePoint;
