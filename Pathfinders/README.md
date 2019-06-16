@@ -23,13 +23,9 @@ Should you want to learn how the algorithm works: https://en.wikipedia.org/wiki/
 
 ### ASTARReturnState
 Object with the following properties:
+
 * `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
 * `path` - Array of points which form the entirety of the path.
-
-#### ASTARReturnState.on( Callback)
-Provides a function to be executed when the path search has completed
-
-* `Callback` - Function to be executed once the path search has completed, `ASTARReturnState` passed as argument.
 
 ### ASTARReturnState.ENUMState
 Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successfull or not.
@@ -37,28 +33,56 @@ Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMS
 ### ASTARReturnState.ClosestPoint
 Set when algorithim the path search is incomplete, equal to the furthest position the bot could find a path to.
 
+## LPA* Pathfinding
+LPA* as per S. Koenig, Maxim Likhachev, David Furcy, 2005.
+Before using the algorithm it is important to familiarize yourself with its function at: https://www.cs.cmu.edu/~maxim/files/aij04.pdf.
+
+The pathfinder module exposes the LPA* Lite implementation, which is presented in Figure 7 of the paper.
+The advantage of using LPA* is it precomputes the global state between the start and end point, this allows for sped up replanning of the bot's path, and is in general faster than the A* algorithm.
+
+However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively.
+
+### LPASTARReturnState
+Object with the following properties:
+
+* `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
+* `path` - See `LPASTARReturnState.path`
+
+### LPASTARReturnState.ENUMState
+Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successful or not.
+
+#### LPASTARReturnState.path.pop()
+As the path is determined while the bot moves across it, pop must be used to determine the next location to move to.
+
+Returns position vector.
+
+#### LPASTARReturnState.path.peek()
+Determines which path element will be popped next.
+
+Returns position vector.
+
+#### LPASTARReturnState.path.replan( position)
+Recomputes the global state, returns promise which always evaluates to the same `LPASTARReturnState`. Returned path will evaluate to a path from the provided position.
 
 ## D* Lite Pathfinding
-D* Lite as per S. Koenig, 2002.
+D* Lite as per S. Koenig, Maxim Likhachev, 2002.
 Before using the algorithm it is important to familiarize yourself with its function at: http://idm-lab.org/bib/abstracts/papers/aaai02b.pdf.
 
 The pathfinder module exposes the D* Lite implementation, which is presented in Figure 4 of the paper.
 The advantage of using D* Lite is it precomputes the global state between the start and end point, this allows for convenient changes of costs at runtime, which can be used for entity avoidance.
 
+It is important to check if a path between the start and end is possible with D* Lite.
+
 However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively.
 
-### DLITEReturnState
+### DLITEReturnState [Not done]
 Object with the following properties:
+
 * `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
 * `path` - See `DLITEReturnState.path`
 
-#### DLITEReturnState.on( Callback)
-Provides a function to be executed when the path search has completed
-
-* `Callback` - Function to be executed once the path search has completed, `DLITEReturnState` passed as argument.
-
 ### DLITEReturnState.ENUMState
-Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successfull or not.
+Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successful or not.
 
 ### DLITEReturnState.ClosestPoint
 Set when algorithim completes path search, equal to the closest point from which a path from the end point to the start could be found.
@@ -75,8 +99,8 @@ Determines which path element will be popped next.
 
 Returns position vector.
 
-#### DLITEReturnState.path.replan()
-Recomputes the global state, when complete the function provided in `DLITEReturnState.on` is run again.
+#### DLITEReturnState.path.replan( position) [Doesn't work yet]
+Recomputes the global state, returns promise which always evaluates to the same `DLITEReturnState`. Returned path will evaluate to a path from the provided position.
 
 
 ## JPS A* Pathfinding [Not implemented]

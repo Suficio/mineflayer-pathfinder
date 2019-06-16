@@ -49,7 +49,7 @@ bot.on('chat', function(username, message)
                 bot.entity.position,
                 bot.players[username].entity.position
             )
-            .on(function(ReturnState)
+            .then(function(ReturnState)
             {
                 const path = ReturnState.path;
                 // Move bot along path and youre done!
@@ -59,8 +59,8 @@ bot.on('chat', function(username, message)
 ```
 
 ## Advanced Usage
-The following code illustrates how a rudimentary D* Lite implementation of pathfinding could work.
-It is important to previously check if a path between the start and end is possible with A* or another algorithm.
+The following code illustrates how a rudimentary LPA* implementation of pathfinding could work.
+Familiarize yourself with how the pathfinder algorithms work before using them.
 ```js
 const mineflayer = require('mineflayer');
 const pathfinder = require('mineflayer-pathfinder');
@@ -77,49 +77,53 @@ bot.on('chat', function(username, message)
         const endPoint = bot.players[username].entity.position.floored();
         const startPoint = bot.entity.position.floored();
 
-        bot.pathfinder
-            .to(startPoint, endPoint)
-            .on(function(ReturnState)
-            {
-                // Checks if path is obstructed, if it is, navigate to closest point.
-                if (ReturnState.ENUMState === bot.pathfinder.ENUMStatus.Incomplete)
-                    endPoint = ReturnState.ClosestPoint;
+        const endPoint = bot.players[username].entity.position.floored();
+        let lastPoint = undefined;
 
-                bot.pathfinder
-                    .to(startPoint, endPoint, bot.pathfinder.ENUMPathfinder.DLITE)
-                    .on(function(ReturnState)
+        function move(returnState)
+        {
+            bot.move.along(returnState.path)
+                .then(function(moveReturn)
+                {
+                    const position = bot.entity.position.floored();
+
+                    if (moveReturn === bot.move.ENUMStatus.Arrived)
                     {
-                        bot.move.along(ReturnState.path).then(function(MoveReturn)
-                        {
-                            // Checks if bot hasnt moved since last replan
-                            if (lastPoint && lastPoint.equals(bot.entity.position.floored()))
-                                bot.chat('I\'ve been blocked!');
+                        if (endPoint.equals(position))
+                            bot.chat('I\'ve arrived!');
 
-                            else if (MoveReturn === bot.move.ENUMStatus.Arrived)
-                            {
-                                // Checks if this is a replan appropiate situation
-                                if (!endPoint.equals(bot.entity.position.floored()))
-                                {
-                                    lastPoint = bot.entity.position.floored();
-                                    // Will call this function again when completed
-                                    ReturnState.path.replan();
-                                }
-                                else
-                                    bot.chat('I\'ve arrived!');
-                            }
-                            else
-                            {
-                                lastPoint = bot.entity.position.floored();
-                                ReturnState.path.replan();
-                            }
-                        });
-                    });
-            });
+                        // Checks if bot hasnt moved since last replan.
+                        // This does not mean there is no path, the bot could have fallen off its know state and should rescan with a new state.
+                        else if (lastPoint && lastPoint.equals(position))
+                            bot.chat('I\'ve been blocked!');
+
+                        else
+                        {
+                            lastPoint = position;
+                            returnState.path.replan(position).then(move);
+                        }
+                    }
+                    else
+                    {
+                        lastPoint = position;
+                        returnState.path.replan(position).then(move);
+                    }
+                });
+        }
+
+        bot.pathfinder.to(
+            bot.entity.position,
+            endPoint,
+            bot.pathfind.ENUMPathfinder.LPASTAR
+        ).then(move);
     }
 });
 ```
 
 ## Documentation
+
+### bot.pathfinder / bot.pathfind
+Main pathfinder class.
 
 ### bot.pathfinder.to( startPoint, endPoint [, ENUMPathfinder])
 Attempts a path search from the start point to the end point using the provided pathfinder.
@@ -149,10 +153,10 @@ Slightly faster version of `bot.blockAt`
 ### bot.pathfinder.MAX_EXPANSIONS
 Integer values which determines the maximum ammount of positions an algorithim will inspect, defaults to 80000.
 
-### bot.pathfinder.HEURISTIC( startPoint, EndPoint)
+### bot.pathfinder.HEURISTIC( startPoint, endPoint)
 Determines the heuristic value from the `startPoint` to the `endPoint`. Defaults to euclidean distance.
 
-### bot.pathfinder.COST( startPoint, EndPoint)
+### bot.pathfinder.COST( startPoint, endPoint)
 Determines the cost value from the `startPoint` to the `endPoint`. Defaults to `bot.pathfinder.HEURISTIC`.
 
 ### bot.pathfinder.ENUMPathfinder

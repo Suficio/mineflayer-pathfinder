@@ -3,55 +3,178 @@ const Heap = require('fastpriorityqueue');
 
 module.exports = function(bot, sp, ep)
 {
-    function LPASTARReturnState(MainPromise)
+    function LPASTARReturnState()
     {
         const returnState = this;
 
-        this.OBSOLETE = [];
-
-        this.on = function(callback)
-        {
-            MainPromise
-                .then(function(IntermediateObject)
-                {
-                    returnState.ENUMStatus = IntermediateObject.ENUMStatus;
-                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
-                    {
-                        console.warn(
-                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
-                            'returned path to closest valid end point'
-                        );
-                    }
-    
-                    // Builds path
-                    let state = IntermediateObject.state;
-                    returnState.path.length = 0;
-                    returnState.path.push(state.c);
-    
-                    while (state.p)
-                    {
-                        state = state.p;
-                        returnState.path.push(state.c);
-                    }
-    
-                    callback(returnState);
-                })
-                .catch(function(e) {console.error('ERROR Pathfinder:', e);});
-        };
-
         // Path functions
-        this.path = [];
-        this.path.peek = function() {return this[0];};
-        this.path.replan = function()
-        {
 
+        let internalPath = [];
+        let oldInternalPath = [];
+        this.path = {};
+        this.path.peek = function()
+        {
+            return internalPath[internalPath.length - 1];
+        };
+        this.path.pop = function()
+        {
+            return internalPath.pop();
+        };
+        this.path.replan = function(sp)
+        {
+            console.log('replan');
+            internalPath = [];
+
+            return new Promise(function(resolve, reject)
+            {
+                computeShortestPath()
+                    .then(function(intermediateObject)
+                    {
+                        returnState.ENUMStatus = intermediateObject.ENUMStatus;
+                        if (intermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                        {
+                            console.warn(
+                                'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                                'returned path to closest valid end point'
+                            );
+                        }
+
+                        // Backtrack along original path until new path is found
+                        // So sorry for this monstrosity
+
+                        const tempPath = [];
+                        let state = intermediateObject.state;
+                        tempPath.push(state.c);
+
+                        while (state.p)
+                        {
+                            state = state.p;
+                            tempPath.push(state.c);
+                        }
+
+                        let found = false;
+
+                        if (sp !== undefined)
+                        {
+                            outer: for (let i = 0, len = oldInternalPath.length; i < len; i++)
+                            {
+                                const c = oldInternalPath[i];
+                                if (found || c.equals(sp.floored()))
+                                {
+                                    found = true;
+                                    internalPath.push(c);
+
+                                    for (let n = 0, tlen = tempPath.length; n < tlen; n++)
+                                    {
+                                        if (c.equals(tempPath[n]))
+                                        {
+                                            while (n > 0)
+                                                internalPath.push(tempPath[--n]);
+
+                                            break outer;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (found)
+                            internalPath = internalPath.reverse();
+                        else
+                            internalPath = tempPath;
+
+                        oldInternalPath = internalPath.slice(0);
+
+                        resolve(returnState);
+                    })
+                    .catch(function(e)
+                    {
+                        console.error('ERROR Pathfinder:', e);
+                        reject(e);
+                    });
+            });
         };
 
-        // Handles changes in the world state
-        bot.on('blockUpdate', function(_, newBlock)
+        // Changes in world state are passed to this function
+        this.path.updateState = function(c)
         {
+            // Check if state or any predecessors of the state are part of the pathfinder state
 
-        });
+            let existsInState = false;
+            const predecessors = bot.pathfinder.getPredecessors(c);
+
+            if (S.check(c))
+                existsInState = true;
+
+            else
+            {
+                for (let m = 0, len = predecessors.length; m < len; m++)
+                {
+                    if (S.check(predecessors[m]))
+                    {
+                        existsInState = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!existsInState)
+                return;
+
+            // Updated block is relevant to pathfinder state
+            // Check if state is blocked or can traverse
+
+            let traversable = false;
+
+            outer: for (let m = 0, len = predecessors.length; m < len; m++)
+            {
+                const successors = bot.pathfinder.getSuccessors(predecessors[m]);
+                for (let n = 0, len = successors.length; n < len; n++)
+                {
+                    if (c.equals(successors[n]))
+                    {
+                        traversable = true;
+                        break outer;
+                    }
+                }
+            }
+
+            // Edge costs are also assumed to not change implying rhs(v) > g(u) + c(u, v), is only true when g(u) is not infinity, which it always is.
+            // Effectively, the first two conditions can never be satisfied.
+            if (!traversable)
+            {
+                const u = new State(c);
+
+                for (let m = 0, len = predecessors.length; m < len; m++)
+                {
+                    const v = new State(predecessors[m]);
+
+                    if (v !== S.start && v.p === u)
+                    {
+                        v.rhs = Number.POSITIVE_INFINITY;
+
+                        const predecessors = bot.pathfinder.getPredecessors(v.c);
+                        for (let n = 0, len = predecessors.length; n < len; n++)
+                        {
+                            const sp = new State(predecessors[n]);
+                            const cost = bot.pathfinder.COST(sp.c, v.c) + sp.g;
+
+                            if (v.rhs > cost)
+                            {
+                                v.rhs = cost;
+                                v.p = sp;
+                            }
+                        }
+
+                        updateVertex(v);
+                    }
+                }
+
+                S.remove(c);
+            }
+
+            return returnState.path.replan(bot.entity.position.floored());
+        };
     };
 
     // Global state functions
@@ -68,19 +191,24 @@ module.exports = function(bot, sp, ep)
 
         this[x][y][s.c.z >>> 0] = s;
     };
-    S.check = function(p)
+    S.check = function(c)
     {
-        const x = p.x >>> 0;
+        const x = c.x >>> 0;
         if (this[x])
         {
-            const y = p.y >>> 0;
+            const y = c.y >>> 0;
             if (this[x][y])
             {
-                if (this[x][y][p.z >>> 0])
+                if (this[x][y][c.z >>> 0])
 
                     return true;
             }
         } return false;
+    };
+    S.remove = function(c)
+    {
+        if (this.check(c))
+            this[c.x >>> 0][c.y >>> 0][c.z >>> 0] = undefined;
     };
 
     // Priority queue functions
@@ -222,17 +350,17 @@ module.exports = function(bot, sp, ep)
     }
 
     // Initialize
-
-    S.goal = new State(ep);
-    S.start = new State(sp);
+    S.start = new State(sp.floored());
     S.start.rhs = 0;
+
+    S.goal = new State(ep.floored());
 
     U.insert(
         S.start,
         [bot.pathfinder.HEURISTIC(S.start.c, S.goal.c), 0]
     );
 
-    return new LPASTARReturnState(computeShortestPath());
+    return new LPASTARReturnState().path.replan();
 };
 
 function compareKeys(k1, k2)

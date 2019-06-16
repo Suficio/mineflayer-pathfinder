@@ -11,8 +11,11 @@ module.exports = function(bot)
     // All in all the user is encouraged to supply his own successor or predecessor functions.
 
     bot.pathfinder = {};
+    bot.pathfind = bot.pathfinder;
     bot.pathfinder.ENUMPathfinder = {ASTAR: 0, DLITE: 1, LPASTAR: 2};
     bot.pathfinder.ENUMStatus = {Complete: 0, Incomplete: 1};
+
+    // Default successor and predecessor implementation
 
     Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {
         value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false,
@@ -25,6 +28,7 @@ module.exports = function(bot)
     bot.pathfinder.getPredecessors = getCardinalNeighbors.bind(undefined, bot.pathfinder.defaultPredecessors);
 
     // Native getBlock implementation too slow for this case
+
     let blocks;
     bot.pathfinder.getBlock = function(absolutePoint)
     {
@@ -57,17 +61,37 @@ module.exports = function(bot)
     };
 
     // Main function to interact
+
+    bot.pathfinder.lastState = undefined;
     bot.pathfinder.to = function(Start, End, ENUMPathfinder)
     {
         if (!ENUMPathfinder || ENUMPathfinder === bot.pathfinder.ENUMPathfinder.ASTAR)
-            return require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.DLITE)
-            return require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.LPASTAR)
-            return require(Path.resolve(__dirname, 'Pathfinders/LPASTAR.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/LPASTAR.js'))(bot, Start.floored(), End.floored());
+
+        bot.pathfinder.lastState.then(function(returnState)
+        {
+            bot.pathfinder.lastState = returnState;
+        });
+
+        return bot.pathfinder.lastState;
     };
+
+    // Passes block updates to last pathfinder, assumes only one is active
+    // Prevents multiple event listeners being registered by each new pathfinder.
+
+    bot.on('blockUpdate', function(block)
+    {
+        if (bot.pathfinder.lastState !== undefined && !(bot.pathfinder.lastState instanceof Promise) && bot.pathfinder.lastState.path.updateState !== undefined)
+            bot.pathfinder.lastState.path.updateState(block.position);
+    });
+
+    // Setup variables
 
     bot.pathfinder.MAX_EXPANSIONS = 100000; // 100000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
