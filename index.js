@@ -39,7 +39,7 @@ module.exports = function(bot)
             this.getBlock = function(absolutePoint)
             {
                 // Get block cannot correctly identify the ammount of layers of snow at any block
-                const key = Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
+                const key = new Vec3(euclideanMod(absolutePoint.x, 16), absolutePoint.y, euclideanMod(absolutePoint.z, 16));
                 const column = bot._chunkColumn(absolutePoint.x - key.x, absolutePoint.z - key.z);
                 if (!column) return null;
 
@@ -87,7 +87,10 @@ module.exports = function(bot)
 
     bot.on('blockUpdate', function(block)
     {
-        if (bot.pathfinder.lastState !== undefined && !(bot.pathfinder.lastState instanceof Promise) && bot.pathfinder.lastState.path.updateState !== undefined)
+        if (
+            bot.pathfinder.lastState !== undefined && !(bot.pathfinder.lastState instanceof Promise) &&
+            bot.pathfinder.lastState.path.updateState !== undefined
+        )
             bot.pathfinder.lastState.path.updateState(block.position);
     });
 
@@ -129,7 +132,7 @@ module.exports = function(bot)
 
             else
             {
-                const blockWorldCoordinate = Vec3(condition.coordinates).rproduct(directionVector).add(playerPosition);
+                const blockWorldCoordinate = new Vec3(condition.coordinates).rproduct(directionVector).add(playerPosition);
                 const blockWorldData = bot.pathfinder.getBlock(blockWorldCoordinate);
                 if (!blockWorldData || blockWorldData.boundingBox !== condition.condition)
                 {
@@ -140,15 +143,15 @@ module.exports = function(bot)
         }
 
         if (!failedCheck)
-            possiblePositions.push(Vec3(blockConditions.coordinates).rproduct(directionVector).add(playerPosition));
+            possiblePositions.push(new Vec3(blockConditions.coordinates).rproduct(directionVector).add(playerPosition));
     }
 };
 
 const cardinalDirectionVectors3D = [
-    Vec3(1, 0, -1), // north
-    Vec3(1, 0, 1), // east
-    Vec3(-1, 0, 1), // south
-    Vec3(-1, 0, -1), // west
+    new Vec3(1, 0, -1), // north
+    new Vec3(1, 0, 1), // east
+    new Vec3(-1, 0, 1), // south
+    new Vec3(-1, 0, -1), // west
 ];
 
 function euclideanMod(numerator, denominator)

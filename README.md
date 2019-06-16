@@ -1,4 +1,5 @@
 # Mineflayer-Pathfinder
+
 Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for Mineflayer found under: [https://github.com/superjoe30/mineflayer/](https://github.com/superjoe30/mineflayer/)
 
 ```diff
@@ -7,6 +8,7 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
 ```
 
 ## Table of Contents
+
 - [Mineflayer-Pathfinder](#mineflayer-pathfinder)
     - [Features](#features)
     - [Table of Contents](#table-of-contents)
@@ -25,12 +27,19 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
     - [Algorithm Documentation](#algorithm-documentation)
 
 ## Features
+
 * Provides high level API for determining paths between two points
 * Multiple algorithms for pathfinding, A* and D*Lite
 * Exposed internal functions to allow easier user replacement
 * Based solely on a promise based API
 
 ## Basic Usage
+
+Firstly, install:
+```
+    npm install --save cheezbarger/mineflayer-move
+```
+
 To get started just paste this code into your bot:
 ```js
 const mineflayer = require('mineflayer');
@@ -59,6 +68,7 @@ bot.on('chat', function(username, message)
 ```
 
 ## Advanced Usage
+
 The following code illustrates how a rudimentary LPA* implementation of pathfinding could work.
 Familiarize yourself with how the pathfinder algorithms work before using them.
 ```js
