@@ -10,30 +10,9 @@ module.exports = function(bot, sp, ep)
     // The advantage of using D* Lite is it precomputes the global state between the start and end point, this allows for
     // convenient changes of costs at runtime, which can be used for entity avoidance.
 
-    function DLITEReturnState(MainPromise)
+    function DLITEReturnState()
     {
         const returnState = this;
-
-        this.OBSOLETE = [];
-
-        this.on = function(callback)
-        {
-            MainPromise
-                .then(function(IntermediateObject)
-                {
-                    returnState.ENUMStatus = IntermediateObject.ENUMStatus;
-                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
-                    {
-                        console.warn(
-                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
-                            'returned path to closest valid end point'
-                        );
-                    }
-
-                    callback(returnState);
-                })
-                .catch(function(e) {console.error('ERROR Pathfinder:', e);});
-        };
 
         // Path functions
         this.path = {};
@@ -41,9 +20,8 @@ module.exports = function(bot, sp, ep)
         {
             // First part of Main() in D*Lite
             if (S.start === S.goal) return undefined;
-            if (ReturnState.OBSOLETE.length !== 0) return undefined;
 
-            let minState;
+            let minState = null;
             let minCost = Number.POSITIVE_INFINITY;
 
             // Get successors according to stored state.
@@ -68,7 +46,7 @@ module.exports = function(bot, sp, ep)
         {
             const temp = _peek();
             if (temp !== undefined)
-                return temp.p;
+                return temp.c;
             else return undefined;
         };
         this.path.pop = function()
@@ -77,13 +55,35 @@ module.exports = function(bot, sp, ep)
             if (temp !== undefined)
             {
                 S.start = temp;
-                return temp.p;
+                return temp.c;
             }
             else return undefined;
         };
-        this.path.replan = function()
+        this.path.replan = function(c)
         {
-            const v = ReturnState.OBSOLETE.pop();
+            return new Promise(function(resolve, reject)
+            {
+                computeShortestPath()
+                    .then(function(intermediateObject)
+                    {
+                        returnState.ENUMStatus = intermediateObject.ENUMStatus;
+                        if (intermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
+                        {
+                            console.warn(
+                                'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                                'returned path to closest valid end point'
+                            );
+                        }
+
+                        resolve(returnState);
+                    })
+                    .catch(function(e)
+                    {
+                        console.error('ERROR Pathfinder:', e);
+                        reject(e);
+                    });
+            });
+            /* const v = ReturnState.OBSOLETE.pop();
             if (v)
             {
                 k_m = k_m + bot.pathfinder.HEURISTIC(S.last.c, S.start.c);
@@ -113,11 +113,11 @@ module.exports = function(bot, sp, ep)
 
                 computeShortestPath().then(ResolveFunction);
             }
-            else computeShortestPath().then(ResolveFunction);
+            else computeShortestPath().then(ResolveFunction);*/
         };
 
         // Handles changes in the world state
-        bot.on('blockUpdate', function(_, newBlock)
+        /* bot.on('blockUpdate', function(_, newBlock)
         {
             const v = ExistingState(newBlock.position);
             if (v && compareKeys(v.k, S.start.k)) // Ensures we havent already passed that block
@@ -126,7 +126,7 @@ module.exports = function(bot, sp, ep)
                 U.remove(U.check(v));
                 S[v.c.x >>> 0][v.c.y >>> 0][v.c.z >>> 0] = undefined;
             }
-        });
+        }); */
     };
 
     // Global state functions
@@ -211,7 +211,10 @@ module.exports = function(bot, sp, ep)
     // Algorithm functions
     function calculateKey(s)
     {
-        return [Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(S.start.c, s.c) + k_m, Math.min(s.g, s.rhs)];
+        return [
+            Math.min(s.g, s.rhs) + bot.pathfinder.HEURISTIC(S.start.c, s.c) + k_m,
+            Math.min(s.g, s.rhs),
+        ];
     }
 
     function updateVertex(u)
@@ -295,8 +298,8 @@ module.exports = function(bot, sp, ep)
 
     let k_m = 0;
 
-    S.start = new State(sp);
-    S.goal = new State(ep);
+    S.start = new State(sp.floored());
+    S.goal = new State(ep.floored());
     S.goal.rhs = 0;
 
     S.last = S.start;
@@ -306,7 +309,7 @@ module.exports = function(bot, sp, ep)
         [bot.pathfinder.HEURISTIC(S.start.c, S.goal.c), 0]
     );
 
-    return new DLITEReturnState(computeShortestPath());
+    return new DLITEReturnState().path.replan();
 };
 
 function compareKeys(k1, k2)

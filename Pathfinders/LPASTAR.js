@@ -22,7 +22,6 @@ module.exports = function(bot, sp, ep)
         };
         this.path.replan = function(sp)
         {
-            console.log('replan');
             internalPath = [];
 
             return new Promise(function(resolve, reject)

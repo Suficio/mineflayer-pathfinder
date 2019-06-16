@@ -13,39 +13,37 @@ module.exports = function(bot, sp, ep)
     // current implementation, this could have been due to an expenisve computation of the hash, however easier to compute hashes collided too frequently.
     // Additionally nested arrays allow the AI to traverse the entirety of the world instead of being limited by integer limits.
 
-    function ASTARReturnState(MainPromise)
+    function ASTARReturnState(mainPromise)
     {
         const returnState = this;
 
-        this.on = function(callback)
-        {
-            MainPromise
-                .then(function(IntermediateObject)
+        mainPromise
+            .then(function(intermediateObject)
+            {
+                returnState.ENUMStatus = intermediateObject.ENUMStatus;
+
+                if (intermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
                 {
-                    returnState.ENUMStatus = IntermediateObject.ENUMStatus;
+                    console.warn(
+                        'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
+                        'returned path to closest valid end point'
+                    );
+                }
 
-                    if (IntermediateObject.ENUMStatus === bot.pathfinder.ENUMStatus.Incomplete)
-                    {
-                        console.warn(
-                            'WARNING Pathfinder: Did not find path in allowed MAX_EXPANSIONS,',
-                            'returned path to closest valid end point'
-                        );
-                    }
+                // Builds path
+                let state = intermediateObject.state;
+                const path = [state.c];
 
-                    // Builds path
-                    let state = IntermediateObject.state;
-                    const path = [state.c];
-                    while (state.cF)
-                    {
-                        state = state.cF;
-                        path.push(state.c);
-                    }
-                    returnState.path = path;
+                while (state.cF)
+                {
+                    state = state.cF;
+                    path.push(state.c);
+                }
+                returnState.path = path;
 
-                    callback(returnState);
-                })
-                .catch(function(e) {console.error('ERROR Pathfinder:', e);});
-        };
+                resolve(returnState);
+            })
+            .catch(function(e) {console.error('ERROR Pathfinder:', e);});
     }
 
     // Closed list functions
@@ -107,7 +105,7 @@ module.exports = function(bot, sp, ep)
     O.push = O.add;
     O.pop = O.poll;
 
-    const MainPromise = new Promise(function(resolve)
+    const mainPromise = new Promise(function(resolve)
     {
         const end = new State(ep.floored());
         const start = new State(sp.floored());
@@ -148,5 +146,13 @@ module.exports = function(bot, sp, ep)
         return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, state: closest});
     });
 
-    return new ASTARReturnState(MainPromise);
+    const returnState = new ASTARReturnState(mainPromise);
+
+    return new Promise(function(resolve)
+    {
+        mainPromise.then(function()
+        {
+            resolve(returnState);
+        });
+    });
 };

@@ -133,7 +133,7 @@ Attempts a path search from the start point to the end point using the provided 
 * `ENUMPathfinder` - specifies which pathfinding algorithim to use, see `bot.pathfinder.ENUMPathfinder`
   * Defaults to `bot.pathfinder.ENUMPathfinder.ASTAR`
 
-Returns a return object based on the `ENUMPathfinder` provided, see Algorithim Documentation.
+Returns a promise which evaluates to the corresponding `ENUMPathfinder` object, see Algorithm Documentation.
 
 ### bot.pathfinder.getSuccessors( position)
 Determines positions to which the bot can move from the given position. There is some discussion about how the default function for `getSuccessors` works at [Default Conditions](https://github.com/CheezBarger/Mineflayer-Pathfinder/tree/master/DefaultConditions)
