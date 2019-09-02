@@ -33,37 +33,6 @@ Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMS
 ### ASTARReturnState.ClosestPoint
 Set when algorithim the path search is incomplete, equal to the furthest position the bot could find a path to.
 
-## LPA* Pathfinding
-LPA* as per S. Koenig, Maxim Likhachev, David Furcy, 2005.
-Before using the algorithm it is important to familiarize yourself with its function at: https://www.cs.cmu.edu/~maxim/files/aij04.pdf.
-
-The pathfinder module exposes the LPA* Lite implementation, which is presented in Figure 7 of the paper.
-The advantage of using LPA* is it precomputes the global state between the start and end point, this allows for sped up replanning of the bot's path, and is in general faster than the A* algorithm.
-
-However it requires the use of the `getPredecessors` function. When supplying your own `getSuccessors` and `getPredecessors` functions, ensure that both functions always return the exact same set of neighbours respectively.
-
-### LPASTARReturnState
-Object with the following properties:
-
-* `ENUMStatus` - Provides the respective `bot.pathfinder.ENUMStatus` based on the outcome of the path search.
-* `path` - See `LPASTARReturnState.path`
-
-### LPASTARReturnState.ENUMState
-Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successful or not.
-
-#### LPASTARReturnState.path.pop()
-As the path is determined while the bot moves across it, pop must be used to determine the next location to move to.
-
-Returns position vector.
-
-#### LPASTARReturnState.path.peek()
-Determines which path element will be popped next.
-
-Returns position vector.
-
-#### LPASTARReturnState.path.replan( position)
-Recomputes the global state, returns promise which always evaluates to the same `LPASTARReturnState`. Returned path will evaluate to a path from the provided position.
-
 ## D* Lite Pathfinding
 D* Lite as per S. Koenig, Maxim Likhachev, 2002.
 Before using the algorithm it is important to familiarize yourself with its function at: http://idm-lab.org/bib/abstracts/papers/aaai02b.pdf.

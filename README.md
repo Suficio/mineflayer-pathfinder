@@ -69,7 +69,7 @@ bot.on('chat', function(username, message)
 
 ## Advanced Usage
 
-The following code illustrates how a rudimentary LPA* implementation of pathfinding could work.
+The following code illustrates how a rudimentary D* Lite implementation of pathfinding could work.
 Familiarize yourself with how the pathfinder algorithms work before using them.
 ```js
 const mineflayer = require('mineflayer');
@@ -124,7 +124,7 @@ bot.on('chat', function(username, message)
         bot.pathfinder.to(
             bot.entity.position,
             endPoint,
-            bot.pathfind.ENUMPathfinder.LPASTAR
+            bot.pathfind.ENUMPathfinder.DLITE
         ).then(move);
     }
 });
