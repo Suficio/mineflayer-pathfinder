@@ -2,11 +2,6 @@
 
 Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for Mineflayer found under: [https://github.com/superjoe30/mineflayer/](https://github.com/superjoe30/mineflayer/)
 
-```diff
-- I do not have the time to maintain this as of now,
-- D* Lite implementation is still not yet fully functional
-```
-
 ## Table of Contents
 
 - [Mineflayer-Pathfinder](#mineflayer-pathfinder)
