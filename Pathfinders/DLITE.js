@@ -21,14 +21,14 @@ module.exports = function(bot, sp, ep)
             // First part of Main() in D*Lite
             if (S.start === S.goal) return undefined;
 
-            let minState = null;
+            let minState;
             let minCost = Number.POSITIVE_INFINITY;
 
             // Get successors according to stored state.
             const successors = bot.pathfinder.getSuccessors(S.start.c);
             for (let n = 0, len = successors.length; n < len; n++)
             {
-                const sp = ExistingState(successors[n]);
+                const sp = new State(successors[n]);
                 if (sp)
                 {
                     const cost = bot.pathfinder.COST(S.start.c, sp.c) + sp.g;
@@ -42,23 +42,35 @@ module.exports = function(bot, sp, ep)
 
             return minState;
         }
+
         this.path.peek = function()
         {
             const temp = _peek();
             if (temp !== undefined)
                 return temp.c;
-            else return undefined;
+            else return;
         };
+
+        let globalMinCost = Number.POSITIVE_INFINITY;
         this.path.pop = function()
         {
             const temp = _peek();
             if (temp !== undefined)
             {
+                const cost = bot.pathfinder.COST(S.start.c, temp.c) + temp.g;
+                if (cost >= globalMinCost) return;
+
+                globalMinCost = cost;
                 S.start = temp;
+
+                k_m = k_m + bot.pathfinder.HEURISTIC(S.last.c, S.start.c);
+                S.last = S.start;
+
                 return temp.c;
             }
-            else return undefined;
+            else return;
         };
+
         this.path.replan = function(c)
         {
             return new Promise(function(resolve, reject)
@@ -83,50 +95,97 @@ module.exports = function(bot, sp, ep)
                         reject(e);
                     });
             });
-            /* const v = ReturnState.OBSOLETE.pop();
-            if (v)
-            {
-                k_m = k_m + bot.pathfinder.HEURISTIC(S.last.c, S.start.c);
-                S.last = S.start;
-
-                // Since the blockUpdate event is only validated when a previously navigable vertex is blocked
-                // we need to only accomodate for one case. [c_old < c(u,v)]
-                const predecessors = bot.pathfinder.getPredecessors(v.c);
-                for (let n = 0, len = predecessors.length; n < len; n++)
-                {
-                    const u = new State(predecessors[n]);
-                    if (floatEqual(u.rhs, bot.pathfinder.COST(u.c, v.c) + v.g) && u !== S.goal)
-                    {
-                        u.rhs = Number.POSITIVE_INFINITY;
-
-                        const successors = bot.pathfinder.getSuccessors(u.c);
-                        for (let m = 0, len = successors.length; m < len; m++)
-                        {
-                            const sp = new State(successors[m]);
-                            const cost = bot.pathfinder.COST(u.c, sp.c) + sp.g;
-                            if (u.rhs > cost) u.rhs = cost;
-                        }
-                    }
-
-                    updateVertex(u);
-                }
-
-                computeShortestPath().then(ResolveFunction);
-            }
-            else computeShortestPath().then(ResolveFunction);*/
         };
 
-        // Handles changes in the world state
-        /* bot.on('blockUpdate', function(_, newBlock)
+        // Changes in world state are passed to this function
+        this.path.updateState = function(c)
         {
-            const v = ExistingState(newBlock.position);
-            if (v && compareKeys(v.k, S.start.k)) // Ensures we havent already passed that block
+            // Check if state or any predecessors of the state are part of the pathfinder state
+            let existsInState = false;
+            const predecessors = bot.pathfinder.getPredecessors(c);
+
+            if (S.check(c))
+                existsInState = true;
+
+            else
             {
-                ReturnState.OBSOLETE.push(v);
-                U.remove(U.check(v));
-                S[v.c.x >>> 0][v.c.y >>> 0][v.c.z >>> 0] = undefined;
+                for (let m = 0, len = predecessors.length; m < len; m++)
+                {
+                    if (S.check(predecessors[m]))
+                    {
+                        existsInState = true;
+                        break;
+                    }
+                }
             }
-        }); */
+
+            if (!existsInState)
+                return;
+
+            // Updated block is relevant to pathfinder state
+            // Check if state is blocked or can traverse
+
+            // Usually a block above the state might be blocking it, this performs a check for a block right below
+            // it as either one or the other will be traversable. c0 is considered the relevant state position.
+
+            let traversable = false;
+            let c0 = c;
+            const c1 = c.offset(0, -1, 0);
+
+            outer: for (let m = 0, len = predecessors.length; m < len; m++)
+            {
+                const successors = bot.pathfinder.getSuccessors(predecessors[m]);
+                for (let n = 0, len = successors.length; n < len; n++)
+                {
+                    if (c0.equals(successors[n]))
+                    {
+                        traversable = true;
+                        break outer;
+                    }
+                    else if (c1.equals(successors[n]))
+                    {
+                        c0 = c1;
+                        traversable = true;
+                        break outer;
+                    }
+                }
+            }
+
+            // Updates state
+
+            if (traversable)
+            {
+                const v = new State(c0);
+                predecessors.unshift(v.c); // Introduce v to state
+            }
+            else
+            {
+                if (!S.check(c0))
+                    c0 = c1;
+            }
+
+            for (let n = 0, len = predecessors.length; n < len; n++)
+            {
+                const u = new State(predecessors[n]);
+
+                if (u !== S.goal)
+                {
+                    u.rhs = Number.POSITIVE_INFINITY;
+
+                    const successors = bot.pathfinder.getSuccessors(u.c);
+                    for (let m = 0, len = successors.length; m < len; m++)
+                    {
+                        const sp = new State(successors[m]);
+                        const cost = bot.pathfinder.COST(u.c, sp.c) + sp.g;
+                        if (u.rhs > cost) u.rhs = cost;
+                    }
+                }
+
+                updateVertex(u);
+            }
+
+            return returnState.path.replan(bot.entity.position.floored());
+        };
     };
 
     // Global state functions
@@ -155,6 +214,10 @@ module.exports = function(bot, sp, ep)
                     return true;
             }
         } return false;
+    };
+    S.remove = function(c)
+    {
+        this[c.x >>> 0][c.y >>> 0][c.z >>> 0] = undefined;
     };
 
     // Priority queue functions
@@ -199,13 +262,6 @@ module.exports = function(bot, sp, ep)
 
             S.push(this);
         }
-    }
-
-    function ExistingState(c)
-    {
-        if (S.check(c))
-            return S[c.x >>> 0][c.y >>> 0][c.z >>> 0];
-        else return undefined;
     }
 
     // Algorithm functions
@@ -261,7 +317,7 @@ module.exports = function(bot, sp, ep)
                     u.g = Number.POSITIVE_INFINITY;
 
                     const predecessors = bot.pathfinder.getPredecessors(u.c);
-                    predecessors.push(u.c); // ∪ {u}
+                    predecessors.unshift(u.c); // ∪ {u}
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new State(predecessors[n]);

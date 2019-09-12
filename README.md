@@ -100,32 +100,38 @@ bot.on('chat', function(username, message)
                     if (moveReturn === bot.move.ENUMStatus.Arrived)
                     {
                         if (endPoint.equals(position))
-                            bot.chat('I\'ve arrived!');
+                            resolve(position);
 
-                        // Checks if bot hasnt moved since last replan.
+                        // Checks if bot hasnt moved since last replan
                         // This does not mean there is no path, the bot could have fallen off its know state and should rescan with a new state.
                         else if (lastPoint && lastPoint.equals(position))
-                            bot.chat('I\'ve been blocked!');
+                            resolve(position);
 
                         else
                         {
                             lastPoint = position;
-                            returnState.path.replan(position).then(move);
+                            bot.pathfind.to(position, endPoint, bot.pathfinder.ENUMPathfinder.DLITE).then(move);
                         }
                     }
                     else
                     {
                         lastPoint = position;
-                        returnState.path.replan(position).then(move);
+                        bot.pathfind.to(position, endPoint, bot.pathfinder.ENUMPathfinder.DLITE).then(move);
                     }
                 });
         }
 
-        bot.pathfinder.to(
-            bot.entity.position,
-            endPoint,
-            bot.pathfind.ENUMPathfinder.DLITE
-        ).then(move);
+        bot.pathfind
+            .to(bot.entity.position, endPoint)
+            .then(function(returnState)
+            {
+                if (returnState.ENUMState === bot.pathfinder.ENUMStatus.Incomplete)
+                    endPoint = returnState.closestPoint;
+
+                bot.pathfind
+                    .to(bot.entity.position, endPoint, bot.pathfinder.ENUMPathfinder.DLITE)
+                    .then(move);
+            });
     }
 });
 ```

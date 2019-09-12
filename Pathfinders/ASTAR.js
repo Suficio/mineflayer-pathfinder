@@ -40,6 +40,7 @@ module.exports = function(bot, sp, ep)
                     path.push(state.c);
                 }
                 returnState.path = path;
+                returnState.closestPoint = state.c;
             })
             .catch(function(e) {console.error('ERROR Pathfinder:', e);});
     }

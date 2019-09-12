@@ -30,7 +30,7 @@ Object with the following properties:
 ### ASTARReturnState.ENUMState
 Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successfull or not.
 
-### ASTARReturnState.ClosestPoint
+### ASTARReturnState.closestPoint
 Set when algorithim the path search is incomplete, equal to the furthest position the bot could find a path to.
 
 ## D* Lite Pathfinding
@@ -53,10 +53,7 @@ Object with the following properties:
 ### DLITEReturnState.ENUMState
 Set when algorithim completes path search, equal to one of `bot.pathfinder.ENUMStatus` depending on whether the path search was successful or not.
 
-### DLITEReturnState.ClosestPoint
-Set when algorithim completes path search, equal to the closest point from which a path from the end point to the start could be found.
-
-If `DLITEReturnState.ENUMState` is incomplete, it is recommended to use a different method to navigate the bot to the `DLITEReturnState.ClosestPoint` before attempting pathfinding using D* Lite again.
+If `DLITEReturnState.ENUMState` is incomplete, it is recommended to use a different method to find the nearest valid point to navigate from.
 
 #### DLITEReturnState.path.pop()
 As the path is determined while the bot moves across it, pop must be used to determine the next location to move to.

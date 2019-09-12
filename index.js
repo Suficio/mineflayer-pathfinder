@@ -96,7 +96,7 @@ module.exports = function(bot)
 
     // Setup variables
 
-    bot.pathfinder.MAX_EXPANSIONS = 100000; // 10000
+    bot.pathfinder.MAX_EXPANSIONS = 10000; // 10000
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 
