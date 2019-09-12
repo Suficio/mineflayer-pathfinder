@@ -192,32 +192,32 @@ module.exports = function(bot, sp, ep)
     const S = [];
     S.push = function(s)
     {
-        const x = s.c.x >>> 0;
         const y = s.c.y >>> 0;
+        const x = s.c.x >>> 0;
 
-        if (!this[x])
-            this[x] = [];
-        if (!this[x][y])
-            this[x][y] = [];
+        if (!this[y])
+            this[y] = [];
+        if (!this[y][x])
+            this[y][x] = [];
 
-        this[x][y][s.c.z >>> 0] = s;
+        this[y][x][s.c.z >>> 0] = s;
     };
     S.check = function(c)
     {
-        const x = c.x >>> 0;
-        if (this[x])
+        const y = c.y >>> 0;
+        if (this[y])
         {
-            const y = c.y >>> 0;
-            if (this[x][y])
+            const x = c.x >>> 0;
+            if (this[y][x])
             {
-                if (this[x][y][c.z >>> 0])
+                if (this[y][x][c.z >>> 0])
                     return true;
             }
         } return false;
     };
     S.remove = function(c)
     {
-        this[c.x >>> 0][c.y >>> 0][c.z >>> 0] = undefined;
+        this[c.y >>> 0][c.x >>> 0][c.z >>> 0] = undefined;
     };
 
     // Priority queue functions
@@ -251,7 +251,7 @@ module.exports = function(bot, sp, ep)
     function State(c)
     {
         if (S.check(c))
-            return S[c.x >>> 0][c.y >>> 0][c.z >>> 0];
+            return S[c.y >>> 0][c.x >>> 0][c.z >>> 0];
         else
         {
             this.c = c;

@@ -1,6 +1,6 @@
 'use strict';
+
 const Vec3 = require('vec3');
-const Path = require('path');
 
 module.exports = function(bot)
 {
@@ -17,15 +17,11 @@ module.exports = function(bot)
 
     // Default successor and predecessor implementation
 
-    Object.defineProperty(bot.pathfinder, 'defaultSuccessors', {
-        value: require(Path.resolve(__dirname, 'DefaultConditions/successorConditions.json')), enumerable: false,
-    });
-    Object.defineProperty(bot.pathfinder, 'defaultPredecessors', {
-        value: require(Path.resolve(__dirname, 'DefaultConditions/predecessorConditions.json')), enumerable: false,
-    });
+    const successorConditions = require('./DefaultConditions/successorConditions.json');
+    const predecessorConditions = require('./DefaultConditions/predecessorConditions.json');
 
-    bot.pathfinder.getSuccessors = getCardinalNeighbors.bind(undefined, bot.pathfinder.defaultSuccessors);
-    bot.pathfinder.getPredecessors = getCardinalNeighbors.bind(undefined, bot.pathfinder.defaultPredecessors);
+    bot.pathfinder.getSuccessors = getCardinalNeighbors.bind(undefined, successorConditions);
+    bot.pathfinder.getPredecessors = getCardinalNeighbors.bind(undefined, predecessorConditions);
 
     // Native getBlock implementation too slow for this case
 
@@ -66,13 +62,13 @@ module.exports = function(bot)
     bot.pathfinder.to = function(Start, End, ENUMPathfinder)
     {
         if (!ENUMPathfinder || ENUMPathfinder === bot.pathfinder.ENUMPathfinder.ASTAR)
-            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/ASTAR.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require('./Pathfinders/ASTAR.js')(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.DLITE)
-            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/DLITE.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require('./Pathfinders/DLITE.js')(bot, Start.floored(), End.floored());
 
         else if (ENUMPathfinder === bot.pathfinder.ENUMPathfinder.LPASTAR)
-            bot.pathfinder.lastState = require(Path.resolve(__dirname, 'Pathfinders/LPASTAR.js'))(bot, Start.floored(), End.floored());
+            bot.pathfinder.lastState = require('./Pathfinders/LPASTAR.js')(bot, Start.floored(), End.floored());
 
         bot.pathfinder.lastState.then(function(returnState)
         {
@@ -96,7 +92,7 @@ module.exports = function(bot)
 
     // Setup variables
 
-    bot.pathfinder.MAX_EXPANSIONS = 10000; // 10000
+    bot.pathfinder.MAX_EXPANSIONS = 10000;
     bot.pathfinder.HEURISTIC = function(p1, p2) {return p1.distanceTo(p2);};
     bot.pathfinder.COST = bot.pathfinder.HEURISTIC;
 

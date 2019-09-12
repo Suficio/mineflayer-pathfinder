@@ -2,11 +2,6 @@
 
 Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for Mineflayer found under: [https://github.com/superjoe30/mineflayer/](https://github.com/superjoe30/mineflayer/)
 
-```diff
-- I do not have the time to maintain this as of now,
-- D* Lite implementation is still not yet fully functional
-```
-
 ## Table of Contents
 
 - [Mineflayer-Pathfinder](#mineflayer-pathfinder)
@@ -102,8 +97,6 @@ bot.on('chat', function(username, message)
                         if (endPoint.equals(position))
                             resolve(position);
 
-                        // Checks if bot hasnt moved since last replan
-                        // This does not mean there is no path, the bot could have fallen off its know state and should rescan with a new state.
                         else if (lastPoint && lastPoint.equals(position))
                             resolve(position);
 
