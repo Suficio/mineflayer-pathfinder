@@ -16,6 +16,7 @@ module.exports = function(bot, sp, ep)
     function ASTARReturnState(mainPromise)
     {
         const returnState = this;
+        this.performance = {time: 0, expansions: 0};
 
         mainPromise
             .then(function(intermediateObject)
@@ -29,6 +30,8 @@ module.exports = function(bot, sp, ep)
                         'returned path to closest valid end point'
                     );
                 }
+
+                returnState.performance = intermediateObject.performance;
 
                 // Builds path
                 let state = intermediateObject.state;
@@ -114,12 +117,17 @@ module.exports = function(bot, sp, ep)
         O.push(start);
 
         let closest = start;
-
-        for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
+        let i = 0;
+        const hrstart = process.hrtime();
+        for (; i < bot.pathfinder.MAX_EXPANSIONS && O.size !== 0; i++)
         {
             const u = O.pop();
             if (u === end)
-                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, state: u});
+            {
+                const hrend = process.hrtime(hrstart);
+                const time = hrend[0] * 1000 + hrend[1] / 1000000;
+                return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, state: u, performance: {time: time, expansions: i}});
+            }
 
             const successors = bot.pathfinder.getSuccessors(u.c);
             for (let n = 0, len = successors.length; n < len; n++)
@@ -142,7 +150,9 @@ module.exports = function(bot, sp, ep)
             if (u.f - u.g < closest.f - closest.g) closest = u;
         };
 
-        return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, state: closest});
+        const hrend = process.hrtime(hrstart);
+        const time = hrend[0] * 1000 + hrend[1] / 1000000;
+        return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, state: closest, performance: {time: time, expansions: i}});
     });
 
     const returnState = new ASTARReturnState(mainPromise);

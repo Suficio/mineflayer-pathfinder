@@ -13,6 +13,7 @@ module.exports = function(bot, sp, ep)
     function DLITEReturnState()
     {
         const returnState = this;
+        this.performance = {time: 0, expansions: 0};
 
         // Path functions
         this.path = {};
@@ -71,7 +72,7 @@ module.exports = function(bot, sp, ep)
             else return;
         };
 
-        this.path.replan = function(c)
+        this.path.replan = function()
         {
             return new Promise(function(resolve, reject)
             {
@@ -86,6 +87,8 @@ module.exports = function(bot, sp, ep)
                                 'returned path to closest valid end point'
                             );
                         }
+
+                        returnState.performance = intermediateObject.performance;
 
                         resolve(returnState);
                     })
@@ -287,7 +290,9 @@ module.exports = function(bot, sp, ep)
     {
         const CSPPromise = new Promise(function(resolve)
         {
-            for (let i = 0; i < bot.pathfinder.MAX_EXPANSIONS && U.size !== 0 &&
+            let i = 0;
+            const hrstart = process.hrtime();
+            for (; i < bot.pathfinder.MAX_EXPANSIONS && U.size !== 0 &&
                 (compareKeys(U.peek().k, calculateKey(S.start)) || S.start.rhs > S.start.g); i++)
             {
                 const u = U.peek();
@@ -340,11 +345,13 @@ module.exports = function(bot, sp, ep)
                     }
                 }
             }
+            const hrend = process.hrtime(hrstart);
+            const time = hrend[0] * 1000 + hrend[1] / 1000000;
 
             if (S.start.rhs === Number.POSITIVE_INFINITY)
-                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Incomplete, performance: {time: time, expansions: i + 1}});
             else
-                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete});
+                resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, performance: {time: time, expansions: i + 1}});
         });
 
         return CSPPromise;
