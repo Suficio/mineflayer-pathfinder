@@ -129,23 +129,27 @@ module.exports = function(bot, sp, ep)
                 return resolve({ENUMStatus: bot.pathfinder.ENUMStatus.Complete, state: u, performance: {time: time, expansions: i}});
             }
 
+            u.closed = true;
+
             const successors = bot.pathfinder.getSuccessors(u.c);
             for (let n = 0, len = successors.length; n < len; n++)
             {
                 const s = new State(successors[n]);
+                if (s.closed === true) continue;
+
                 const g_new = u.g + bot.pathfinder.COST(u.c, s.c);
 
-                if (s.g <= g_new) continue;
-                else if (s.closed === true)
-                    s.closed = false;
+                if (g_new < s.g)
+                {
+                    s.p = u;
+                    s.g = g_new;
+                    s.f = s.g + bot.pathfinder.HEURISTIC(s.c, end.c);
 
-                s.p = u;
-                s.g = g_new;
-                s.f = s.g + bot.pathfinder.HEURISTIC(s.c, end.c);
-                O.push(s);
+                    if (!O.check(s))
+                        O.push(s);
+                }
             };
 
-            u.closed = true;
             // Retains the closest element to the end
             if (u.f - u.g < closest.f - closest.g) closest = u;
         };

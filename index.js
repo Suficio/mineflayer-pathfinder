@@ -22,8 +22,8 @@ module.exports = function(bot)
     bot.pathfinder.getSuccessors = function() {return [];};
     bot.pathfinder.getPredecessors = function() {return [];};
 
-    // defaultNeighborSearch(bot);
-    compiledNeighborSearch(bot);
+    defaultNeighborSearch(bot);
+    // compiledNeighborSearch(bot);
 
     // Native getBlock implementation too slow for this case
 

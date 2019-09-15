@@ -17,8 +17,15 @@ module.exports = function(bot, sp, ep)
 
         // Path functions
         this.path = {};
+        let pathInvalidated = false;
         function _peek()
         {
+            if (pathInvalidated)
+            {
+                console.warn('WARNING Pathfinder: State has been invalidated, replan before attempting repath.');
+                return undefined;
+            }
+
             // First part of Main() in D*Lite
             if (S.start === S.goal) return undefined;
 
@@ -89,6 +96,7 @@ module.exports = function(bot, sp, ep)
                         }
 
                         returnState.performance = intermediateObject.performance;
+                        pathInvalidated = false;
 
                         resolve(returnState);
                     })
@@ -187,7 +195,7 @@ module.exports = function(bot, sp, ep)
                 updateVertex(u);
             }
 
-            return returnState.path.replan(bot.entity.position.floored());
+            pathInvalidated = true;
         };
     };
 
@@ -311,7 +319,6 @@ module.exports = function(bot, sp, ep)
                     for (let n = 0, len = predecessors.length; n < len; n++)
                     {
                         const s = new State(predecessors[n]);
-
                         if (s !== S.goal) s.rhs = Math.min(s.rhs, bot.pathfinder.COST(s.c, u.c) + u.g);
                         updateVertex(s);
                     }
