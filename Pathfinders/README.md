@@ -58,12 +58,12 @@ If `DLITEReturnState.ENUMState` is incomplete, it is recommended to use a differ
 #### DLITEReturnState.path.pop()
 As the path is determined while the bot moves across it, pop must be used to determine the next location to move to.
 
-Returns position vector.
+Returns position vector, when path is finished, returns undefined.
 
 #### DLITEReturnState.path.peek()
 Determines which path element will be popped next.
 
-Returns position vector.
+Returns position vector, when path is finished, returns undefined.
 
 #### DLITEReturnState.path.replan( position) [Doesn't work yet]
 Recomputes the global state, returns promise which always evaluates to the same `DLITEReturnState`. Returned path will evaluate to a path from the provided position.

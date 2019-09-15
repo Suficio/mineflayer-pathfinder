@@ -103,13 +103,13 @@ bot.on('chat', function(username, message)
                         else
                         {
                             lastPoint = position;
-                            bot.pathfind.to(position, endPoint, bot.pathfinder.ENUMPathfinder.DLITE).then(move);
+                            returnState.path.replan().then(move);
                         }
                     }
                     else
                     {
                         lastPoint = position;
-                        bot.pathfind.to(position, endPoint, bot.pathfinder.ENUMPathfinder.DLITE).then(move);
+                        returnState.path.replan().then(move);
                     }
                 });
         }

@@ -59,16 +59,11 @@ module.exports = function(bot, sp, ep)
             else return;
         };
 
-        let globalMinCost = Number.POSITIVE_INFINITY;
         this.path.pop = function()
         {
             const temp = _peek();
             if (temp !== undefined)
             {
-                const cost = bot.pathfinder.COST(S.start.c, temp.c) + temp.g;
-                if (cost >= globalMinCost) return;
-
-                globalMinCost = cost;
                 S.start = temp;
 
                 k_m = k_m + bot.pathfinder.HEURISTIC(S.last.c, S.start.c);
@@ -133,6 +128,8 @@ module.exports = function(bot, sp, ep)
             if (!existsInState)
                 return;
 
+            pathInvalidated = true;
+
             // Updated block is relevant to pathfinder state
             // Check if state is blocked or can traverse
 
@@ -194,8 +191,6 @@ module.exports = function(bot, sp, ep)
 
                 updateVertex(u);
             }
-
-            pathInvalidated = true;
         };
     };
 
