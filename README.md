@@ -25,6 +25,7 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
 
 * Provides high level API for determining paths between two points
 * Multiple algorithms for pathfinding, A* and D*Lite
+* Often nearly 3 times as fast as mineflayer-navigate
 * Exposed internal functions to allow easier user replacement
 * Based solely on a promise based API
 

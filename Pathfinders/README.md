@@ -65,8 +65,8 @@ Determines which path element will be popped next.
 
 Returns position vector, when path is finished, returns undefined.
 
-#### DLITEReturnState.path.replan( position) [Doesn't work yet]
-Recomputes the global state, returns promise which always evaluates to the same `DLITEReturnState`. Returned path will evaluate to a path from the provided position.
+#### DLITEReturnState.path.replan()
+Recomputes the global state, returns promise which always evaluates to the same `DLITEReturnState`.
 
 
 ## JPS A* Pathfinding [Not implemented]
