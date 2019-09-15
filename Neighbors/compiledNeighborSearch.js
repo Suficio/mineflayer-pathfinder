@@ -37,12 +37,12 @@ module.exports = function compiledNeighborSearch(bot)
 
     const hrstart = process.hrtime();
 
-    bot.pathfinder.getSuccessors = compileNeighborSearch(successorConditions);
     bot.pathfinder.getPredecessors = compileNeighborSearch(predecessorConditions);
+    bot.pathfinder.getSuccessors = compileNeighborSearch(successorConditions);
 
     const hrend = process.hrtime(hrstart);
     const time = hrend[0] * 1000 + hrend[1] / 1000000;
-    console.log('bot.pathfinder.compileNeighborSearch: neighbors compiled in ' + time + ' ms');
+    console.log('LOG Pathfinder: Neighbors compiled in ' + time + ' ms');
 
     function compileNeighborSearch(conditions)
     {
@@ -90,7 +90,7 @@ module.exports = function compiledNeighborSearch(bot)
 
         let getCardinalNeighbors;
         eval(escodegen.generate(AST));
-        // console.log(String(getCardinalNeighbors));
+        // require('fs').writeFileSync('./testFunction.js', String(getCardinalNeighbors));
         return getCardinalNeighbors;
     }
 
@@ -128,10 +128,11 @@ module.exports = function compiledNeighborSearch(bot)
         for (let i = 0, il = JSONData.conditions.length; i < il; i++)
         {
             const condition = JSONData.conditions[i];
-            const worldCoordinates = rproduct(Vec3(condition.coordinates), direction);
 
             if (condition.type === 'nc_condition')
             {
+                const worldCoordinates = rproduct(Vec3(condition.coordinates), direction);
+
                 ncConditionVariables.push('nc' + i);
                 currentBlock.push(
                     new VariableDeclaration(
@@ -194,6 +195,8 @@ module.exports = function compiledNeighborSearch(bot)
             }
             else if (condition.type === 'condition')
             {
+                const worldCoordinates = rproduct(Vec3(condition.coordinates), direction);
+    
                 conditionVariables.push('c' + i);
                 currentBlock.push(
                     new VariableDeclaration(
@@ -256,8 +259,7 @@ module.exports = function compiledNeighborSearch(bot)
             }
             else if (condition.type === 'blockconditions')
             {
-                const b0 = [];
-                const b1 = [];
+                const b = [];
 
                 currentBlock.push(
                     new IfStatement(
@@ -277,7 +279,7 @@ module.exports = function compiledNeighborSearch(bot)
                                             ]
                                         )
                                     ),
-                                    new BlockStatement(b0),
+                                    new BlockStatement(b),
                                 ]
                             ),
                             null
@@ -286,7 +288,7 @@ module.exports = function compiledNeighborSearch(bot)
                             [
                                 new IfStatement(
                                     compileLogical(conditionVariables),
-                                    new BlockStatement(b1),
+                                    new BlockStatement(b),
                                     null
                                 ),
                             ]
@@ -295,41 +297,37 @@ module.exports = function compiledNeighborSearch(bot)
                 );
 
                 rootBlock.push(new BlockStatement(currentBlock));
-
-                parseConditions(condition, direction, b0);
-                parseConditions(condition, direction, b1);
-            }
-            else
-            {
-                currentBlock.push(
-                    new IfStatement(
-                        compileLogical(ncConditionVariables),
-                        new IfStatement(
-                            compileLogical(conditionVariables),
-                            new BlockStatement(
-                                [
-                                    new ExpressionStatement(
-                                        new CallExpression(
-                                            new MemberExpression(
-                                                new Identifier('returnArray'),
-                                                new Identifier('push')
-                                            ),
-                                            [
-                                                new Identifier('coordinate'),
-                                            ]
-                                        )
-                                    ),
-                                ]
-                            ),
-                            null
-                        ),
-                        null
-                    )
-                );
-
-                rootBlock.push(new BlockStatement(currentBlock));
+                return parseConditions(condition, direction, b);
             }
         }
+
+        currentBlock.push(
+            new IfStatement(
+                compileLogical(ncConditionVariables),
+                new IfStatement(
+                    compileLogical(conditionVariables),
+                    new BlockStatement(
+                        [
+                            new ExpressionStatement(
+                                new CallExpression(
+                                    new MemberExpression(
+                                        new Identifier('returnArray'),
+                                        new Identifier('push')
+                                    ),
+                                    [
+                                        new Identifier('coordinate'),
+                                    ]
+                                )
+                            ),
+                        ]
+                    ),
+                    null
+                ),
+                null
+            )
+        );
+
+        rootBlock.push(new BlockStatement(currentBlock));
     }
 
     return compiledNeighborSearch;
@@ -346,6 +344,9 @@ function compileLiteral(number)
 
 function compileLogical(array)
 {
+    if (array.length === 0)
+        return new Literal(true);
+
     if (array.length === 1)
         return new Identifier(array[0]);
 

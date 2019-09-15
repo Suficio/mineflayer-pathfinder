@@ -35,6 +35,7 @@ module.exports = function(bot, sp, ep)
 
                 // Builds path
                 let state = intermediateObject.state;
+                returnState.closestPoint = state.c;
                 const path = [state.c];
 
                 while (state.p)
@@ -43,7 +44,6 @@ module.exports = function(bot, sp, ep)
                     path.push(state.c);
                 }
                 returnState.path = path;
-                returnState.closestPoint = state.c;
             })
             .catch(function(e) {console.error('ERROR Pathfinder:', e);});
     }
@@ -151,7 +151,8 @@ module.exports = function(bot, sp, ep)
             };
 
             // Retains the closest element to the end
-            if (u.f - u.g < closest.f - closest.g) closest = u;
+            if (u.f - u.g < closest.f - closest.g)
+                closest = u;
         };
 
         const hrend = process.hrtime(hrstart);
