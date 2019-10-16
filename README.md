@@ -33,7 +33,7 @@ Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for 
 
 Firstly, install:
 ```
-    npm install --save cheezbarger/mineflayer-move
+    npm install --save cheezbarger/mineflayer-pathfinder
 ```
 
 To get started just paste this code into your bot:
