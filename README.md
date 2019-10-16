@@ -1,4 +1,4 @@
-# Mineflayer-Pathfinder
+# mineflayer-pathfinder
 
 Fast, promise based, 3D pathfinding library using A* and D*Lite algorithms, for Mineflayer found under: [https://github.com/superjoe30/mineflayer/](https://github.com/superjoe30/mineflayer/)
 
